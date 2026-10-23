@@ -7,7 +7,12 @@ Product code is written from Nov 1 onwards. Before that, only research,
 design and spikes (`spikes/`), so the git history clearly shows what was
 built during the hackathon.
 
-Tracks to enter: `privacy` (main), `open`. Add `agents` only if the
+Flagship demo: certifying AI scam filters on a private scam test set
+(`SCAM_TESTSET_DESIGN.md`). The maths contamination check is a secondary
+example.
+
+Tracks to enter: `privacy` (main), `security` (the track brief names "scam
+detection" and "reputation"), `open`. Add `agents` only if the
 agent-evaluation stretch goal ships.
 
 ## Before Nov 1 (research only)
@@ -15,7 +20,8 @@ agent-evaluation stretch goal ships.
 | Day | Work | Done when |
 |---|---|---|
 | Oct 24–25 | Settle open questions 1–5 in `ARCHITECTURE.md` on testnet | Each has a recorded answer in `spikes/SPIKE_NOTES.md` |
-| Oct 26–27 | Write the item generator design and the scoring rules; pick 3–4 TEE models to evaluate | A one-page spec, no product code |
+| Oct 26–27 | Finalise the scam test-set design and scoring rules; write the 20-item public sample; pick 3–4 TEE models to evaluate | You've approved `SCAM_TESTSET_DESIGN.md` and the sample |
+| Oct 28–31 | Write the private scam set (about 150–200 items) outside the repo, labelled and reviewed by both of us | Every item has a label, category and one-line rationale; no item in git |
 | Oct 28–31 | Final name; frontend wireframe; README outline with "do X, see Y" steps | You've approved them |
 
 ## Week 1: the core works end to end on testnet
@@ -28,7 +34,7 @@ agent-evaluation stretch goal ships.
 | Nov 4 | Contract: sets, models, `request_eval`, chunk fan-out to OutLayer | Sandbox tests pass (near-workspaces) |
 | Nov 5 | Contract: `on_chunk` with on-chain signature checks, aggregation, certificates, royalties, refunds | Sandbox tests cover the success path, a failed chunk and a bad signature |
 | Nov 6 | End-to-end on testnet: one model, a 20-item set, certificate on-chain | A certificate can be viewed through RPC |
-| Nov 7 | Item generator + private set + public counterpart; first runs on 3–4 models | Results table with real numbers |
+| Nov 7 | Seal the private scam set on testnet; certify 3–4 models; run the public sample for comparison; maths check if time allows | Results table with real numbers |
 
 ## Week 2: product, polish, submission
 
@@ -58,6 +64,8 @@ agent-evaluation stretch goal ships.
 | Can't pass the author's set and the API key in one secret profile | Resolve before Nov 1; fallbacks in open question 1 |
 | FastFS outage | Host grader builds at another public HTTPS URL with a pinned hash |
 | A TEE model is slow or reasons at length, so a chunk exceeds 180 s | Smaller chunks, reasoning off, measured per model on Nov 7 |
-| Results show no contamination gap | Publish honestly; the product's value is a score you can verify, whatever it is |
+| Results show no gap between public and private scores | Publish honestly; the product's value is a score you can verify, whatever it is |
+| Every model scores near 100% on the scam set | Hard cases carry the set (look-alike legitimate messages, subtle new scam types); try the public sample on 2–3 TEE models directly on Oct 27 and adjust the mix before writing the private set |
+| The private scam set leaks | Never in git or anywhere public. As its authors we know its contents, as any author does; Proctor's promise is that nobody *else* (model vendors, OutLayer, NEAR AI) can read it once sealed. Delete local copies after sealing |
 | Scope creep | Stretch goals (cross-chain payment, agent evals, DAO-run model registry) only after Nov 10 and only if the core is green |
 | Another team builds the same idea | Keep the idea out of public channels until the submission |

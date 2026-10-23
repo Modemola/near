@@ -4,11 +4,27 @@ Working name: **Proctor**. The name isn't final.
 
 ## The problem
 
-Public benchmark scores are increasingly hard to trust. Test sets leak into
-training data, labs tune for leaderboards, and nobody outside the lab can check
-a reported number. Private test sets ("held-out" sets) fix contamination but
-create a new problem: you have to trust whoever holds the set and runs the
-evaluation.
+AI is becoming the scam filter for inboxes, banks, messaging apps and family
+phones. The only evidence of how well a model catches scams is the vendor's own
+number on a benchmark it picked.
+
+Public scam benchmarks have two problems:
+
+- They leak into training data, so models are tuned for exactly those
+  examples.
+- Scammers can read them too, and keep testing their scripts against them
+  until they get through.
+
+A scam test set is only useful while it stays secret. Keeping it secret
+usually means trusting whoever holds it and runs the evaluation.
+
+The same applies to AI benchmarks in general (contaminated, self-reported,
+uncheckable scores). Scam detection is where the stakes are easiest to see.
+
+## The pitch
+
+*Every vendor grades its own AI scam filter. Proctor certifies it on scams it
+has never seen, without anyone, including us, seeing the test set.*
 
 ## What Proctor does
 
@@ -64,8 +80,9 @@ State:
   attestation reports. Registered by an attester role for the hackathon; see
   the trust model below.
 - **Test sets**: id, author, commitment = SHA-256 of the canonical plaintext,
-  item count, chunk count, scoring type (`exact`, `multiple_choice`,
-  `numeric`), price, royalty split, submission cap per model, status.
+  item count, chunk count, scoring type (`classification` for the scam set,
+  plus `exact`/`numeric`), price, royalty split, submission cap per model,
+  status.
 - **Evals**: requester, set, model, nonce, chunk results, state.
 - **Certificates**: eval id, model, set commitment, grader hash, score,
   per-chunk OutLayer request ids, Merkle root of per-item answer records,
@@ -122,9 +139,14 @@ them.
   fetches `/v1/signature/<id>?signing_algo=ed25519`, checks the signature and
   that the signer matches the preflight report, and scores the answer.
 - Output (JSON, a few KB per chunk): `{set_id, chunk, model, n, correct,
-  signer, attestation_report_sha256, items: [{text, signature}], records_root}`.
-  It holds no item content and no per-item correctness. OutLayer's two-call
-  flow handles larger outputs.
+  confusion: {tp, fp, tn, fn}, signer, attestation_report_sha256,
+  items: [{text, signature}], records_root}`.
+  It holds no item content and no per-item correctness. Only aggregate counts
+  leave the enclave. OutLayer's two-call flow handles larger outputs.
+- For the scam set, the model gets a fixed system prompt plus the message
+  (channel, sender display and text) and must answer `SCAM` or `LEGIT` with a
+  one-line reason. The grader takes the label after any `</think>`. An
+  answer it can't parse counts as wrong, never as skipped.
 - Each job is capped at 180 s, so a chunk is about 10–20 items depending on
   the model's speed.
 
@@ -138,16 +160,27 @@ them.
   hash, and registers the set with its price and royalty.
 - **Requester flow**: pick a model and a set, pay with a NEAR wallet, and watch
   the chunks resolve live.
-- **Contamination view**: a model's score on a public benchmark shown next to
-  its certified score on a private equivalent set.
+- **Scam-filter leaderboard** (the landing page): certified detection rate,
+  false-alarm rate and overall accuracy for each TEE model on the private scam
+  set. Next to each, the same model's score on the public sample (see below),
+  so any gap between public and private is visible.
+- **Contamination view** (secondary): a model's score on a public maths
+  benchmark next to its certified score on a private equivalent set.
 
 ### 4. Demo data
 
-A generator for grade-school maths items made from templates (new numbers and
-names, known answers, in the spirit of GSM-Symbolic). Each item has a public
-counterpart drawn from a widely published benchmark. The private set is
-generated locally from a secret seed, encrypted, and never committed. We
-publish whatever results we get, including no gap if there is none.
+- **Flagship: the private scam set.** About 150–200 labelled messages across
+  current scam types and realistic legitimate look-alikes. The design is in
+  [`SCAM_TESTSET_DESIGN.md`](SCAM_TESTSET_DESIGN.md). The set is written and
+  reviewed outside the repo, encrypted in the browser flow, and never
+  committed. A small **public sample** (about 20 items, clearly marked
+  public) is committed so judges can see what the items look like and
+  compare scores.
+- **Secondary: maths contamination check.** Templated grade-school maths
+  items (new numbers and names, known answers, in the spirit of GSM-Symbolic),
+  each with a public counterpart from a widely published benchmark. Generated
+  from a secret seed and never committed.
+- We publish whatever results we get, including no gap if there is none.
 
 ## Trust model
 
@@ -180,6 +213,10 @@ publish whatever results we get, including no gap if there is none.
   scores limit this but don't remove it.
 - **LLM outputs vary between runs.** A certificate is "the score of this
   run", recorded with model id and nonce.
+- **The demo scam set was written for this project,** not collected from
+  real victims. It's realistic and reviewed by hand, but a certificate only
+  says how a model did on *this* set. Proctor's value is that any author
+  (a bank's fraud team, a researcher) can bring a set the same way.
 
 ## Open questions (status 2026-10-23)
 
