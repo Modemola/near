@@ -48,3 +48,14 @@ grader hash, score, attestation).
 - Testnet account: create one with near-cli-rs `account create-account sponsor-by-faucet-service`.
 - Contract: `cd spikes/outlayer-caller && cargo near build non-reproducible-wasm`, deploy, then
   `run '{"project_id":"<owner>/<project>","input":"{}"}'` with ~0.0032 NEAR attached and 300 Tgas.
+
+## Scam sample difficulty check (pending)
+
+`data/public-sample/scam-sample.json`: 20 public items (11 scam, 9 legitimate,
+9 categories, mostly medium/hard). `spikes/scam-sample-eval/eval.py` runs it on
+TEE models. First attempt on Qwen3.8-27B, GLM-5.3-flash and DeepSeek-v3.2 got
+`401 Invalid or expired API key` for every call because the pasted key had been
+regenerated; no model results yet. Rerun in a session that has `NEARAI_API_KEY`:
+
+    printf '%s' "$NEARAI_API_KEY" > /tmp/k && python3 -I spikes/scam-sample-eval/eval.py /tmp/k \
+      data/public-sample/scam-sample.json Qwen/Qwen3.8-27B z-ai/glm-5.3-flash deepseek/deepseek-v3.2; rm /tmp/k
