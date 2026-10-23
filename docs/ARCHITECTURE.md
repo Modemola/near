@@ -86,11 +86,31 @@ Flow:
   royalty and protocol fee. A failed or timed-out chunk refunds that part, and
   the eval can be retried.
 - Payment in NEAR and in NEP-141 USDC through `ft_on_transfer`. Cross-chain
-  payment through NEAR Intents 1-Click is a stretch goal (mainnet only).
+  payment through NEAR Intents 1-Click is a stretch goal. NEAR Intents exist
+  on mainnet only, which OutLayer's skill index confirms, so a testnet demo
+  can't show it.
 - Leakage controls: a submission cap per (set, model); only aggregate scores
   are published, never which items were right.
 
+Rules from OutLayer's `building-outlayer-apps` skill:
+
+- Pin a `rust-toolchain.toml`. Build contracts only with `cargo near build`.
+- Always attach a `resource_limits` value; a request without one runs
+  nothing.
+- Attach at least 0.01 NEAR per request, or what `estimate_execution_cost`
+  returns. Pass the remaining gas to OutLayer with `with_unused_gas_weight(1)`.
+- The callback receives `Result<Option<String>, PromiseError>`. OutLayer adds
+  no envelope: the grader's stdout comes back verbatim, so the grader emits
+  `{success, output, error}` itself.
+
 ### 2. Grader (Rust → `wasm32-wasip2`, runs on OutLayer)
+
+Built as `[[bin]]` (not `[lib]`). The manifest is embedded in the
+`outlayer.manifest` custom section, so the WASM's sha256 covers it.
+`stdout` is flushed explicitly. Encryption keys need `wasm32-wasip2`, and
+their host functions exist only on OutLayer workers, so local tests stub
+them.
+
 
 - Reads its chunk of the test set from the decrypted secret (environment
   variable), or from `outlayer::storage` if the set is too large for a secret.
@@ -164,14 +184,31 @@ publish whatever results we get, including no gap if there is none.
 ## Open questions (status 2026-10-23)
 
 1. **Two secrets in one job: settled on paper, test once downloads work.**
-   `secrets_ref` names one profile. Plan: use OutLayer's per-build encryption
-   keys (`encryption_keys` in the grader's manifest, XChaCha20-Poly1305,
-   derived in the keystore, never visible to the guest). A one-time "seal" run
-   under our own profile encrypts the NEAR AI key to the grader. Contract
-   state keeps only the ciphertext and passes it in each eval's input, and
-   the eval decrypts it in the enclave while reading the test set from the
-   author's profile. The key is bound to the grader's build, so a new build
-   needs a new seal run. Fallback: `outlayer::storage`.
+   `secrets_ref` names one profile. Plan, checked against OutLayer's
+   `building-outlayer-apps` skill (`references/encryption-keys.md`):
+   - The grader declares one encryption key in its manifest:
+     `{"path": "nearai", "bind": "project", "caller": "predecessor"}`,
+     together with `"storage_account": "predecessor"`.
+   - The keystore derives it from
+     `HMAC(master, "encryption-key:v1:project:{project_uuid}:predecessor:{Proctor account}:nearai")`.
+     So only runs of our grader project that the Proctor contract calls can
+     open it, and every later version of the project can still open it.
+   - A one-time "seal" run, called by Proctor with `secrets_ref` set to our
+     own profile (which holds `NEARAI_API_KEY`), encrypts the key with
+     `encrypt("nearai", None, key, aad)`.
+   - The ciphertext is not secret. It is stored in contract state or in the
+     grader's sealed raw storage.
+   - Each eval run uses the author's `secrets_ref` for the test set and opens
+     the API key with `decrypt`. The grader never outputs the plaintext.
+   - Fallback: `outlayer::storage` encrypted records.
+   - **Test-set rows must be pinned to one build.** A `project` accessor
+     alone would let the project owner (us) switch to a version that leaks
+     the set. Authors store their set with
+     `--project <owner>/grader --build <grader sha256> --direct` and a
+     whitelist naming the Proctor contract. Then only that audited build,
+     called directly by Proctor, can decrypt it. A new grader build needs
+     each author to move the lock (`secrets access --build <new sha>`), so
+     the UI must make that a single click.
 2. **Publishing grader builds: blocked by OutLayer, not by hosting.** Testnet
    has no download/compiler worker online (`/public/workers` lists only two
    executors and the keystore), so a `WasmUrl` that isn't cached is refused
