@@ -49,13 +49,30 @@ grader hash, score, attestation).
 - Contract: `cd spikes/outlayer-caller && cargo near build non-reproducible-wasm`, deploy, then
   `run '{"project_id":"<owner>/<project>","input":"{}"}'` with ~0.0032 NEAR attached and 300 Tgas.
 
-## Scam sample difficulty check (pending)
+## Scam sample difficulty check (2026-10-23)
 
-`data/public-sample/scam-sample.json`: 20 public items (11 scam, 9 legitimate,
-9 categories, mostly medium/hard). `spikes/scam-sample-eval/eval.py` runs it on
-TEE models. First attempt on Qwen3.8-27B, GLM-5.3-flash and DeepSeek-v3.2 got
-`401 Invalid or expired API key` for every call because the pasted key had been
-regenerated; no model results yet. Rerun in a session that has `NEARAI_API_KEY`:
+`data/public-sample/scam-sample.json` (20 items: 11 scam, 9 legitimate) scored
+with `spikes/scam-sample-eval/eval.py`: temperature 0, `max_tokens` 2000,
+reasoning on, 4 requests in parallel.
 
-    printf '%s' "$NEARAI_API_KEY" > /tmp/k && python3 -I spikes/scam-sample-eval/eval.py /tmp/k \
-      data/public-sample/scam-sample.json Qwen/Qwen3.8-27B z-ai/glm-5.3-flash deepseek/deepseek-v3.2; rm /tmp/k
+| Model | Scams caught | False alarms | Accuracy | Wrong | Wall time |
+|---|---|---|---|---|---|
+| Qwen/Qwen3.8-27B | 11/11 | 1/9 | 95% | pub-13 (no answer) | 52 s |
+| z-ai/glm-5.3-flash | 11/11 | 1/9 | 95% | pub-12 flagged as scam | 157 s |
+| deepseek/deepseek-v3.2 | 11/11 | 0/9 | 100% | none | 116 s |
+
+Findings:
+
+- **Too easy on scams.** Every model caught every scam. The only differences
+  were legitimate look-alikes: a real new-number text (pub-12) and a real bank
+  fraud check (pub-13). The private set must use much subtler scams and more
+  hard legitimate items. False alarms are likely to be the metric that
+  separates models.
+- **Token budget is part of the test.** On pub-13, Qwen used all 2000 tokens
+  reasoning (`finish_reason: length`, 5.5k characters, no `content`). The
+  certificate must record a fixed budget, and running out counts as wrong.
+- **Latency is higher than the spike suggested.** GLM averaged about 31 s per
+  item (157 s for 20 items, 4 at a time). Within a 180 s job that means about
+  5 items per chunk for slow models, unless the grader can make requests in
+  parallel.
+- 20 items is a small sample; these numbers are only a difficulty signal.

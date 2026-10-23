@@ -147,8 +147,12 @@ them.
   (channel, sender display and text) and must answer `SCAM` or `LEGIT` with a
   one-line reason. The grader takes the label after any `</think>`. An
   answer it can't parse counts as wrong, never as skipped.
-- Each job is capped at 180 s, so a chunk is about 10–20 items depending on
-  the model's speed.
+- Each job is capped at 180 s. Measured on the public scam sample, slow models
+  take up to about 30 s per item with reasoning, so a chunk is about 5 items
+  for slow models and up to about 20 for fast ones. Chunk size is set per
+  model, unless parallel requests inside the grader prove workable.
+- The token budget (`max_tokens`) is fixed per set and recorded in the
+  certificate. An answer that runs out of budget counts as wrong.
 
 ### 3. Frontend (TypeScript, React)
 
@@ -260,7 +264,9 @@ them.
    `content` (`…29.</think>29`). With reasoning on, both were correct in
    1.2–3.1 s, with valid `provider_tee` signatures. The grader allows enough
    tokens and parses the final answer after any `</think>`. That works out to
-   about 20 items per 180 s chunk.
+   about 20 items per 180 s chunk for fast models; the scam
+   sample measured up to about 30 s per item for slow ones (see
+   `spikes/SPIKE_NOTES.md`).
 5. **On-chain signature gas: settled.** `ED25519_VERIFY_BASE` costs 0.21
    Tgas per check, and the full `verify_tee_signature` call costs 1.36 Tgas.
    20 checks in `on_chunk` come to about 4–5 Tgas.
