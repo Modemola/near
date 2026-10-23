@@ -59,7 +59,22 @@ impl Contract {
         text
     }
 
+    /// Verify a NEAR AI Cloud `provider_tee` response signature on-chain:
+    /// `text` is `<model>:<sha256(request)>:<sha256(response)>`, signed with Ed25519
+    /// by the key published in the model's TEE attestation.
+    pub fn verify_tee_signature(&self, text: String, signature_hex: String, signer_hex: String) -> bool {
+        let sig: [u8; 64] = hex_bytes(&signature_hex).try_into().expect("signature must be 64 bytes");
+        let key: [u8; 32] = hex_bytes(&signer_hex).try_into().expect("signer must be 32 bytes");
+        env::ed25519_verify(&sig, text.as_bytes(), &key)
+    }
+
     pub fn get_last_result(&self) -> Option<String> {
         self.last_result.clone()
     }
+}
+
+fn hex_bytes(s: &str) -> Vec<u8> {
+    let s = s.trim_start_matches("0x");
+    assert!(s.len() % 2 == 0, "odd-length hex");
+    (0..s.len()).step_by(2).map(|i| u8::from_str_radix(&s[i..i + 2], 16).expect("invalid hex")).collect()
 }

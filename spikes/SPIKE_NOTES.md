@@ -21,7 +21,9 @@ grader hash, score, attestation).
 | 5 | Can our own contract receive the result in a callback? | Yes | `spikes/outlayer-caller` deployed at `caller.certspike-1a6b29.testnet`; tx `AXnT8TKNzc2eFixq1QmV9qCXgEzaDZc6ZvHWmpiFCCm4` ran request_execution, then `on_result` logged and stored the output. |
 | 6 | Does each job get an attestation we can put in a certificate? | Yes | `GET testnet-api.outlayer.ai/attestations/14047` returns `tdx_quote`, `worker_measurement`, `wasm_hash` = `executed_wasm_sha256`, `input_hash` (sha256 of the input; verified for `{}`), `output_hash`, `transaction_hash`, `block_height`, `caller_account_id`. |
 | 7 | Can we run our own WASM? | Blocked | `test.fastfs.io` returns Cloudflare 502, so workers can't download WASM that isn't cached yet. Our runs (requests 5562, 5563) were refunded with "Execution promise failed". Projects whose WASM was already cached ran fine. Retry when FastFS is back, or host the WASM at another public HTTPS URL (`WasmUrl` accepts any public HTTPS URL on port 443 plus its sha256). |
-| 8 | Can a WasmHash-locked secret be decrypted in the TEE, and can that code call NEAR AI? | Not run yet | Needs `NEARAI_API_KEY` set in the environment (new session). From source: OutLayer `ai-example` calls OpenAI-compatible APIs through WASI HTTP with the key from an encrypted secret; it builds to a 438 KB `wasm32-wasip2` component. |
+| 8 | Can a WasmHash-locked secret be decrypted in the TEE, and can that code call NEAR AI? | Set up, not run | `spikes/secret-probe` builds two variants: `a` = `f9320ade…e520`, `b` = `5d57074d…eb08`. A dummy test set is stored as profile `spike`, accessor `WasmHash(f9320ade…)`, whitelist `certspike-1a6b29.testnet`. Both are uploaded to FastFS. Running them waits on the FastFS outage. The CLI also offers `--build <sha>` (lock a project row to one binary) and `--direct`/`--via` (lock which calling contract may trigger decryption). |
+| 9 | Do TEE completions carry a signature we can check? | Yes | `Qwen/Qwen3.8-27B`, non-streamed, `x-no-aliasing: true`: `/v1/signature/<chat_id>?signing_algo=ed25519` returned `signature_kind: provider_tee`; the text equals `<model>:<sha256(request bytes)>:<sha256(response bytes)>`, the Ed25519 signature verifies, and the signer equals `signing_address` in `/v1/attestation/report` fetched first with our nonce (the report also carries `intel_quote` and `nvidia_payload`). Cost: about 87 tokens. Script outside the repo; the key is never written to the repo. |
+| 10 | Can a NEAR contract verify that signature itself? | Yes | `verify_tee_signature(text, signature_hex, signer_hex)` in `spikes/outlayer-caller` (calls `env::ed25519_verify`) returns `true` for the real signature and `false` after changing one character of `text`, on `caller.certspike-1a6b29.testnet`. |
 
 ## Constraints for the design
 
@@ -29,6 +31,8 @@ grader hash, score, attestation).
 - Default `max_memory_mb` is 128; examples go up to 512.
 - `input_data` over 32 KB costs extra storage deposit; large test sets go in secrets or `outlayer::storage`, not in the input.
 - Each job's attestation binds the WASM hash, input hash and output hash, so the certificate can point at the attestation records instead of re-verifying TDX on-chain.
+- NEAR AI response signatures are Ed25519 over exact request/response bytes, so the contract can check each graded answer's signature. Trust root: the model's signing key, taken from an attestation report verified off-chain and registered in the contract.
+- TEE models such as Qwen3.8-27B reason by default; with `max_tokens: 16` all tokens went to reasoning and `content` was null. Allow enough tokens or turn reasoning off (see docs.near.ai reasoning-models) before grading.
 
 ## Other teams seen on OutLayer testnet (public job log)
 
