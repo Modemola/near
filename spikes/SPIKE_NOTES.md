@@ -76,3 +76,32 @@ Findings:
   5 items per chunk for slow models, unless the grader can make requests in
   parallel.
 - 20 items is a small sample; these numbers are only a difficulty signal.
+
+## Harder calibration candidates (2026-10-23)
+
+`data/calibration/hard-candidates.json`: 13 public items (7 subtle scams, 6
+alarming-but-legitimate). Same settings as above.
+
+| Model | Scams caught | False alarms | Accuracy | Wrong |
+|---|---|---|---|---|
+| Qwen/Qwen3.8-27B | 7/7 | 0/6 | 100% | none |
+| z-ai/glm-5.3-flash | 7/7 | 0/6 | 100% | none |
+| deepseek/deepseek-v3.2 (run 1) | 5/7 | 1/6 | 77% | cal-02, cal-04, cal-12 |
+| deepseek/deepseek-v3.2 (run 2) | 4/7 | 1/6 | 77% | cal-01, cal-02, cal-04 |
+| deepseek/deepseek-v3.2 (run 3) | 4/7 | 2/6 | 69% | cal-01, cal-02, cal-04, cal-12 |
+
+Findings:
+
+- **Rankings change on unseen items.** DeepSeek scored 100% on the public
+  sample and 69–77% here; Qwen and GLM went the other way (95% then 100%).
+  This is the demo's point in miniature.
+- **What fooled a model:** payroll diversion from a personal email (cal-02,
+  missed every run), a parking "penalty" text with a payment link (cal-04,
+  every run), and a payee change inside a real thread from the real address
+  (cal-01, 2 of 3 runs). It also flagged a genuine withdrawal notice (cal-12,
+  2 of 3 runs).
+- **Run-to-run variance is real even at temperature 0:** the same model and
+  settings scored 69–77% and missed different items. A certificate should
+  aggregate several runs and publish the range.
+- Qwen and GLM are still perfect on 13 items, so the private set needs more
+  items of this kind and more of them overall to separate strong models.

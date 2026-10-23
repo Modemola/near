@@ -1,0 +1,138 @@
+{
+  "name": "Proctor calibration: harder candidates",
+  "version": 1,
+  "public": true,
+  "note": "Public calibration items used to tune how hard the private scam set must be. Never part of any private test set. All names, numbers, brands and domains are fictional.",
+  "items": [
+    {
+      "id": "cal-01",
+      "channel": "email",
+      "from": "Mark Ellis <mark@brightlineprint.example.com>",
+      "text": "Re: Re: November posters\n\nHi Sarah, thanks for confirming the quantities, glad the proofs worked. One thing before you pay BLP-2302: our usual account (ending 7731) is frozen for a couple of weeks while we migrate banks, so finance asked me to share the interim account for this invoice only: sort code 23-14-70, account 66120938, name Brightline Print Ltd. Everything else stays the same. Cheers, Mark",
+      "label": "SCAM",
+      "category": "invoice_payee_change",
+      "difficulty": "hard",
+      "rationale": "Bank-detail change by email, even from the known address and in a real thread, is the business email compromise signature; verify by phone."
+    },
+    {
+      "id": "cal-02",
+      "channel": "email",
+      "from": "Ama Boateng <ama.boateng.home@mail.example.com>",
+      "text": "Hi Jess, hope you're well! I've switched banks this month, could you update my salary details before payroll runs on the 25th? New details: Ama Boateng, sort code 09-01-28, account 40031177. Sorry for the short notice and thanks so much!",
+      "label": "SCAM",
+      "category": "invoice_payee_change",
+      "difficulty": "hard",
+      "rationale": "Payroll diversion from a personal address, deadline before payroll, no verification route."
+    },
+    {
+      "id": "cal-03",
+      "channel": "email",
+      "from": "ChainTrace Recovery <cases@chaintrace-recovery.example.org>",
+      "text": "Dear client, we saw your report about funds lost to the QuantEdge platform. Our blockchain forensics team has traced your USDT to an exchange wallet and can file for its release. We work on a no-recovery, no-fee basis. The exchange does require a one-time 0.05 ETH unlocking fee before it releases traced funds; details are in your case file.",
+      "label": "SCAM",
+      "category": "investment_pig_butchering",
+      "difficulty": "medium",
+      "rationale": "Recovery scam targeting earlier victims; upfront fee despite a no-fee promise."
+    },
+    {
+      "id": "cal-04",
+      "channel": "sms",
+      "from": "CityPark",
+      "text": "Parking notice: vehicle AB12 CDE was recorded in a pay-and-display bay without valid payment on 14 Oct. Pay the reduced charge of £35 within 7 days at https://citypark-pcn.example.com to avoid it rising to £70.",
+      "label": "SCAM",
+      "category": "government_tax",
+      "difficulty": "medium",
+      "rationale": "Penalty by text with a discount deadline and a payment link."
+    },
+    {
+      "id": "cal-05",
+      "channel": "whatsapp",
+      "from": "Sophie (saved contact)",
+      "text": "Hey! Sorry, silly question, I was setting up WhatsApp on my new laptop and I think I typed your number by mistake, so the 6-digit code went to you. Could you forward it to me? 🙏",
+      "label": "SCAM",
+      "category": "bank_impersonation",
+      "difficulty": "hard",
+      "rationale": "Account-takeover attempt from a known (likely hijacked) contact asking for a verification code."
+    },
+    {
+      "id": "cal-06",
+      "channel": "whatsapp",
+      "from": "Wealth Circle Study Group",
+      "text": "Welcome to the Wealth Circle study group! 🎉 As promised, Professor Hale shares free daily market signals here. This week only, new members get a 30% deposit bonus on our partner exchange. Register through the pinned link and send your account ID to our assistant to unlock the VIP signals.",
+      "label": "SCAM",
+      "category": "investment_pig_butchering",
+      "difficulty": "medium",
+      "rationale": "Investment group lure with bonus deposits on an unnamed partner exchange."
+    },
+    {
+      "id": "cal-07",
+      "channel": "email",
+      "from": "ParcelSwift <updates@parcelswift-mail.example.net>",
+      "text": "We've updated our delivery terms. To keep receiving parcels without interruption, please confirm your delivery address and date of birth on your account page within 48 hours: https://parcelswift-account.example.net/verify",
+      "label": "SCAM",
+      "category": "delivery_fee",
+      "difficulty": "medium",
+      "rationale": "Data phishing with a deadline on a look-alike domain; asks for date of birth."
+    },
+    {
+      "id": "cal-08",
+      "channel": "voice_transcript",
+      "from": "Northfield Bank (automated)",
+      "text": "This is an automated message from Northfield Bank about recent activity on your card ending 4417. Please call us on the number printed on the back of your card and quote reference 66-1204. Never share any codes with anyone, including us.",
+      "label": "LEGIT",
+      "category": "bank_impersonation",
+      "difficulty": "hard",
+      "rationale": "Points to the number on the card, gives no number of its own, warns against sharing codes."
+    },
+    {
+      "id": "cal-09",
+      "channel": "sms",
+      "from": "NorthfieldBk",
+      "text": "Your Northfield Bank code is 482913. It is for: adding new payee J SMITH. Never share this code, not even with us. If you didn't ask for this, call the number on your card.",
+      "label": "LEGIT",
+      "category": "bank_impersonation",
+      "difficulty": "hard",
+      "rationale": "Genuine one-time code from the bank with the action named and a do-not-share warning."
+    },
+    {
+      "id": "cal-10",
+      "channel": "whatsapp",
+      "from": "Mum (saved contact)",
+      "text": "Can you put £20 towards Auntie Bisi's birthday present? Same account as last time for your cousin's collection. I'll see you Sunday x",
+      "label": "LEGIT",
+      "category": "family_emergency",
+      "difficulty": "hard",
+      "rationale": "Small, ordinary request from a saved contact to a previously used account, no urgency."
+    },
+    {
+      "id": "cal-11",
+      "channel": "email",
+      "from": "ShiftPal <support@shiftpal.example.com>",
+      "text": "You're booked for your first shift on Saturday! Before we can pay you, please verify your ID in the ShiftPal app under Account > Verification. We will never ask you to pay anything or share your password.",
+      "label": "LEGIT",
+      "category": "job_task",
+      "difficulty": "hard",
+      "rationale": "ID check inside the official app, no link, no payment."
+    },
+    {
+      "id": "cal-12",
+      "channel": "email",
+      "from": "Coinvault <no-reply@coinvault.example.com>",
+      "text": "You requested a withdrawal of 0.25 ETH to 0x71C4...9A3E. For your security it will be processed in 30 minutes. If this was you, no action is needed. If it wasn't, open the Coinvault app and lock your account in Settings > Security.",
+      "label": "LEGIT",
+      "category": "investment_pig_butchering",
+      "difficulty": "hard",
+      "rationale": "Genuine withdrawal notice: no link, directs to the app."
+    },
+    {
+      "id": "cal-13",
+      "channel": "sms",
+      "from": "TAX-OFFICE",
+      "text": "Tax Office: we've sent you a letter about your 2025/26 tax code. You can read it in your online tax account. We will never ask for payment or bank details by text.",
+      "label": "LEGIT",
+      "category": "government_tax",
+      "difficulty": "hard",
+      "rationale": "No link, no request, points to the online account."
+    }
+  ]
+}

@@ -215,8 +215,10 @@ them.
   and OutLayer's TDX attestation.
 - **Scores can leak information about the set.** The cap and aggregate-only
   scores limit this but don't remove it.
-- **LLM outputs vary between runs.** A certificate is "the score of this
-  run", recorded with model id and nonce.
+- **LLM outputs vary between runs,** even at temperature 0: on the
+  calibration items one model scored 69–77% across three identical runs. A
+  certificate therefore aggregates 3 runs and publishes the mean and the
+  range, recorded with model id and nonce.
 - **The demo scam set was written for this project,** not collected from
   real victims. It's realistic and reviewed by hand, but a certificate only
   says how a model did on *this* set. Proctor's value is that any author

@@ -107,6 +107,20 @@ public next to private. The public sample is never part of the private set.
 5. Local copies are deleted after sealing. The commitment hash lets us prove
    later which set was used, if we choose to reveal it after the hackathon.
 
+## Calibration results (Oct 23)
+
+On the 20-item public sample, three TEE models caught every scam. On 13
+harder calibration items (`data/calibration/hard-candidates.json`), one model
+dropped to 69–77% while two stayed perfect. So the private set should:
+
+- make about 60% of items hard;
+- lean on business and payment fraud (payroll diversion, payee changes in
+  real threads, penalty or fine texts with payment links), which fooled a
+  model on every run;
+- include plenty of genuine financial notices (withdrawals, one-time codes,
+  bank call-backs), because false alarms separate models as much as misses;
+- have enough items (150–200) that a few items don't decide the ranking.
+
 ## Before writing the private set (Oct 26–27)
 
 - Write the 20-item public sample.
