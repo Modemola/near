@@ -161,19 +161,32 @@ publish whatever results we get, including no gap if there is none.
 - **LLM outputs vary between runs.** A certificate is "the score of this
   run", recorded with model id and nonce.
 
-## Open questions to settle before 2026-11-01
+## Open questions (status 2026-10-23)
 
-1. **Two secrets in one job.** `secrets_ref` names a single profile, but the
-   grader needs the author's test set and the NEAR AI API key. Options:
-   - merge the key into each set's profile with `secrets update`, which merges
-     inside the keystore;
-   - keep the key in `outlayer::storage` for the grader;
-   - have the requester provide inference credit.
-   Needs a testnet check.
-2. **FastFS availability** for publishing grader builds, or another public
-   HTTPS host (`WasmUrl` accepts any https:443 URL plus its hash).
-3. **Locked-secret decryption** end to end: probe A reads the dummy set and
-   probe B is refused. Prepared in `spikes/secret-probe`.
-4. **Reasoning control** for TEE models, so answers aren't cut off.
-5. **Chunk output size and gas** when verifying 10–20 signatures in
-   `on_chunk`.
+1. **Two secrets in one job: settled on paper, test once downloads work.**
+   `secrets_ref` names one profile. Plan: use OutLayer's per-build encryption
+   keys (`encryption_keys` in the grader's manifest, XChaCha20-Poly1305,
+   derived in the keystore, never visible to the guest). A one-time "seal" run
+   under our own profile encrypts the NEAR AI key to the grader. Contract
+   state keeps only the ciphertext and passes it in each eval's input, and
+   the eval decrypts it in the enclave while reading the test set from the
+   author's profile. The key is bound to the grader's build, so a new build
+   needs a new seal run. Fallback: `outlayer::storage`.
+2. **Publishing grader builds: blocked by OutLayer, not by hosting.** Testnet
+   has no download/compiler worker online (`/public/workers` lists only two
+   executors and the keystore), so a `WasmUrl` that isn't cached is refused
+   before a job exists. It fails the same way from FastFS and from
+   `raw.githubusercontent.com`. Cached projects run fine. Ask the OutLayer
+   team.
+3. **Locked-secret decryption: ready, waiting on 2.** The secret is stored
+   (profile `spike`, `WasmHash(f9320ade…)`) and both probes are uploaded.
+4. **Reasoning control: settled. Keep reasoning on.** With
+   `enable_thinking: false`, Qwen3.8-27B answered a two-step word problem
+   wrongly (`1` instead of `29`) and GLM-5.3-flash leaked its reasoning into
+   `content` (`…29.</think>29`). With reasoning on, both were correct in
+   1.2–3.1 s, with valid `provider_tee` signatures. The grader allows enough
+   tokens and parses the final answer after any `</think>`. That works out to
+   about 20 items per 180 s chunk.
+5. **On-chain signature gas: settled.** `ED25519_VERIFY_BASE` costs 0.21
+   Tgas per check, and the full `verify_tee_signature` call costs 1.36 Tgas.
+   20 checks in `on_chunk` come to about 4–5 Tgas.

@@ -25,6 +25,10 @@ grader hash, score, attestation).
 | 9 | Do TEE completions carry a signature we can check? | Yes | `Qwen/Qwen3.8-27B`, non-streamed, `x-no-aliasing: true`: `/v1/signature/<chat_id>?signing_algo=ed25519` returned `signature_kind: provider_tee`; the text equals `<model>:<sha256(request bytes)>:<sha256(response bytes)>`, the Ed25519 signature verifies, and the signer equals `signing_address` in `/v1/attestation/report` fetched first with our nonce (the report also carries `intel_quote` and `nvidia_payload`). Cost: about 87 tokens. Script outside the repo; the key is never written to the repo. |
 | 10 | Can a NEAR contract verify that signature itself? | Yes | `verify_tee_signature(text, signature_hex, signer_hex)` in `spikes/outlayer-caller` (calls `env::ed25519_verify`) returns `true` for the real signature and `false` after changing one character of `text`, on `caller.certspike-1a6b29.testnet`. |
 
+| 11 | Why do our own WASM runs fail? | OutLayer side | Testnet `/public/workers` lists only `testnet-executor-*` (x2) and `testnet-keystore`, with no downloader or compiler. An uncached `WasmUrl` fails before any job record is made, from FastFS (`test.fastfs.io/...` and `<account>.fastfs.io/...`) and from `raw.githubusercontent.com` alike (requests 5562, 5563, the probe A run, the GitHub test). The worker code (`compiler/mod.rs`) does support any https:443 host, up to 3 redirects, with a hash check. |
+| 12 | Reasoning on or off? | Keep it on | Two-step word problem, temperature 0: Qwen3.8-27B 29 (on, 1.23 s) vs 1 (off); GLM-5.3-flash 29 (on, 3.09 s) vs reasoning leaked into `content` (off). All four signatures verified. |
+| 13 | Gas for an on-chain signature check | ~0.21 Tgas each | tx `5Tv72DfFBGfGZnG8b8UFNT6qnFix1FjCNUtwutrgrBCt`: `ED25519_VERIFY_BASE` 0.21 Tgas, receipt total 1.358 Tgas. |
+
 ## Constraints for the design
 
 - 180 s per job means grading in chunks (for example 10–20 items per job), with the contract adding up partial scores.
