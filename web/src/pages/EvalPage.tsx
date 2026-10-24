@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AccountLink, ErrorNote, Loading, PageHead, Panel, Stat, StatStrip, StatusBadge, useAsync } from "../components/ui";
 import { friendlyError, isCancel } from "../lib/errors";
@@ -91,8 +92,9 @@ export function EvalPage() {
                 <div className="batches">
                   {ev.chunks.slice(run * ev.chunks_per_run, (run + 1) * ev.chunks_per_run).map((c, i) => (
                     <span
-                      key={i}
+                      key={`${i}-${c.state}`}
                       className={`batch ${c.state}`}
+                      style={{ "--d": `${i * 0.06}s` } as CSSProperties}
                       title={`Batch ${i + 1}: ${STATE_WORD[c.state]}${"attempts" in c && c.attempts ? `, attempt ${c.attempts}` : ""}`}
                     />
                   ))}
@@ -152,7 +154,7 @@ export function EvalPage() {
         </div>
 
         <aside>
-          <Panel eyebrow="Keep it moving" title={ev.status === "Running" ? "Start the next batches" : "Nothing to start"}>
+          <Panel className="glass" eyebrow="Keep it moving" title={ev.status === "Running" ? "Start the next batches" : "Nothing to start"}>
             {ev.status === "Running" && waiting > 0 ? (
               <>
                 <p className="small" style={{ color: "var(--ink-secondary)" }}>

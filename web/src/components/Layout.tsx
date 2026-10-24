@@ -1,7 +1,9 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useLayoutEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { config, isConfigured } from "../lib/config";
 import { proctor } from "../lib/near";
 import { useWallet } from "../lib/wallet";
+import { Aurora, useAmbientMotion } from "./motion";
 import { useAsync } from "./ui";
 
 /** OutLayer contracts that run real TEE workers. */
@@ -11,34 +13,61 @@ export function Layout() {
   const { accountId, signIn, signOut, ready } = useWallet();
   const cfg = useAsync(() => (isConfigured ? proctor.config() : Promise.resolve(null)), []);
   const simulated = cfg.data && !REAL_OUTLAYER.has(cfg.data.outlayer);
+  const location = useLocation();
+  useAmbientMotion();
+
+  // The pill slides under whichever nav link is current.
+  const nav = useRef<HTMLElement>(null);
+  const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const a = nav.current?.querySelector<HTMLElement>("a.active");
+      setPill(a ? { x: a.offsetLeft, w: a.offsetWidth } : null);
+    };
+    place();
+    document.fonts?.ready.then(place);
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [location.pathname]);
+  useLayoutEffect(() => window.scrollTo({ top: 0 }), [location.pathname]);
+
   return (
     <>
+      <Aurora />
+      <div className="scroll-progress" aria-hidden="true" />
       <header className="site">
         <div className="wrap">
-          <NavLink to="/" className="brand">
-            <img src="/favicon.svg" alt="" />
-            Proctor
-          </NavLink>
-          <nav className="main" aria-label="Main">
-            <NavLink to="/" end>
-              Results
+          <div className="bar-glass">
+            <NavLink to="/" className="brand">
+              <img src="/favicon.svg" alt="" />
+              Proctor
             </NavLink>
-            <NavLink to="/sets">Tests</NavLink>
-            <NavLink to="/how">How it works</NavLink>
-            <NavLink to="/publish">Publish a test</NavLink>
-          </nav>
-          <span className="net" title="NEAR network">
-            {config.networkId}
-          </span>
-          {accountId ? (
-            <button className="btn secondary small" onClick={() => signOut()} title="Disconnect wallet">
-              {accountId.length > 22 ? `${accountId.slice(0, 20)}…` : accountId}
-            </button>
-          ) : (
-            <button className="btn secondary small" onClick={signIn} disabled={!ready}>
-              Connect wallet
-            </button>
-          )}
+            <nav className="main" aria-label="Main" ref={nav}>
+              <span
+                className="nav-pill"
+                aria-hidden="true"
+                style={{ transform: `translateX(${pill?.x ?? 0}px)`, width: pill?.w ?? 0, opacity: pill ? 1 : 0 }}
+              />
+              <NavLink to="/" end>
+                Results
+              </NavLink>
+              <NavLink to="/sets">Tests</NavLink>
+              <NavLink to="/how">How it works</NavLink>
+              <NavLink to="/publish">Publish a test</NavLink>
+            </nav>
+            <span className="net" title="NEAR network">
+              {config.networkId}
+            </span>
+            {accountId ? (
+              <button className="btn secondary small" onClick={() => signOut()} title="Disconnect wallet">
+                {accountId.length > 22 ? `${accountId.slice(0, 20)}…` : accountId}
+              </button>
+            ) : (
+              <button className="btn small" onClick={signIn} disabled={!ready}>
+                Connect wallet
+              </button>
+            )}
+          </div>
         </div>
       </header>
       <main>
@@ -56,16 +85,20 @@ export function Layout() {
               <code>web/.env.local</code> (see <code>.env.example</code>).
             </div>
           )}
-          <Outlet />
+          <div className="route" key={location.pathname}>
+            <Outlet />
+          </div>
         </div>
       </main>
       <footer className="site">
         <div className="wrap">
-          <span>Proctor. Independent results for AI scam filters, checked on NEAR.</span>
-          <span>
-            Contract <code>{config.contractId || "not set"}</code> on {config.networkId} ·{" "}
-            <a href={config.sourceUrl}>Source code</a>
-          </span>
+          <div>
+            <span>Proctor. Independent results for AI scam filters, checked on NEAR.</span>
+            <span>
+              Contract <code>{config.contractId || "not set"}</code> on {config.networkId} ·{" "}
+              <a href={config.sourceUrl}>Source code</a>
+            </span>
+          </div>
         </div>
       </footer>
     </>

@@ -218,7 +218,7 @@ function RequestEval({ set, models, config }: { set: TestSet; models: string[]; 
   };
 
   return (
-    <Panel eyebrow="Certify a model" title="Test a model on this" sub="Runs the whole test, sealed, and records the result.">
+    <Panel className="glass" eyebrow="Certify a model" title="Test a model on this" sub="Runs the whole test, sealed, and records the result.">
       <label className="field">
         <span>Model</span>
         <select value={model} onChange={(e) => setModel(e.target.value)}>

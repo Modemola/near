@@ -37,3 +37,24 @@ Ordinary words first, technical words one click away.
 | commitment | fingerprint of the sealed test |
 | TEE | secure hardware (with "TEE" in the details) |
 | dispatch | start the next batches |
+
+## Surfaces and motion (revision 2)
+
+Requested direction: richer depth and motion. This replaces the template's
+"square corners, almost no shadow" and "motion explains, never decorates".
+
+- **Glass** for whatever floats over the living background: header, hero
+  answer sheets, action panels, notes, notifications.
+- **Soft relief (neumorphism)** for what you touch and read: panels, stat
+  tiles, leaderboard rows, buttons (raised, press in), inputs (inset),
+  answer bubbles (beads pressed into the sheet).
+- **3D:** the hero shows a model's runs as a fanned deck of glass answer
+  sheets that turns towards the pointer, with the stamp floating in front;
+  a turning glass "sealed box" with the test glowing inside illustrates
+  sealing on Tests, How it works and Publish. Pure CSS, no WebGL.
+- **Motion:** slow aurora background, route transitions, a sliding nav
+  indicator, scroll reveals, count-up figures, cursor spotlight on panels,
+  staggered rows and bars, springy notifications, a scroll progress line.
+- **Kept:** one green accent, text contrast, keyboard focus, colour never
+  the only signal, and `prefers-reduced-motion` resolves everything to its
+  final state (no tilt, no drifting, no count-up).

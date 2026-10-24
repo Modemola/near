@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { config } from "../lib/config";
 import { friendlyError } from "../lib/errors";
+import { CountUp } from "./motion";
 import type { Confusion, EvalStatus } from "../lib/types";
 
 /**
@@ -87,12 +88,15 @@ export function Panel({
   );
 }
 
-export function PageHead({ eyebrow, title, children }: { eyebrow: string; title: ReactNode; children?: ReactNode }) {
+export function PageHead({ eyebrow, title, children, art }: { eyebrow: string; title: ReactNode; children?: ReactNode; art?: ReactNode }) {
   return (
-    <header className="page-head">
-      <p className="eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      {children && <p className="lede">{children}</p>}
+    <header className={`page-head${art ? " with-art" : ""}`}>
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h1>{title}</h1>
+        {children && <p className="lede">{children}</p>}
+      </div>
+      {art}
     </header>
   );
 }
@@ -120,7 +124,7 @@ export function Stat({ label, value, sub, hero }: { label: string; value: ReactN
   return (
     <div className={`stat${hero ? " lead" : ""}`}>
       <div className="label">{label}</div>
-      <div className="stat-value">{value}</div>
+      <div className="stat-value">{typeof value === "string" || typeof value === "number" ? <CountUp value={value} /> : value}</div>
       {sub && <div className="sub">{sub}</div>}
     </div>
   );
@@ -227,14 +231,21 @@ export function AnswerSheet({
           <i className="bubble wrong" /> Mistake
         </span>
       </div>
-      {stamp && (
-        <div className="stamp" style={{ "--d": `${total * step + 0.15}s` } as CSSProperties} aria-label={`${stampLabel}: ${stamp}`}>
-          <div>
-            <b>{stamp}</b>
-            <span>{stampLabel}</span>
-          </div>
-        </div>
-      )}
+      {stamp && <Stamp value={stamp} label={stampLabel} delay={total * step + 0.15} />}
+    </div>
+  );
+}
+
+/** The examiner's stamp that lands on a finished answer sheet. */
+export function Stamp({ value, label, delay = 1.2 }: { value: string; label: string; delay?: number }) {
+  return (
+    <div className="stamp" style={{ "--d": `${delay}s` } as CSSProperties} role="img" aria-label={`${label}: ${value}`}>
+      <div>
+        <b>
+          <CountUp value={value} ms={900} />
+        </b>
+        <span>{label}</span>
+      </div>
     </div>
   );
 }

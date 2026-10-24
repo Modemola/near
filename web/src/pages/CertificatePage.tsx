@@ -223,7 +223,7 @@ function Verify({ evalId, answers }: { evalId: string; answers: number }) {
     report.answersValid === report.answersChecked &&
     report.chunks.every((c) => c.problems.length === 0);
   return (
-    <Panel eyebrow="Check it yourself" title="Verify every answer">
+    <Panel className="glass" eyebrow="Check it yourself" title="Verify every answer">
       <p className="small" style={{ color: "var(--ink-secondary)" }}>
         Your browser re-checks all {answers} signed answers against the model's key, using data straight from the NEAR
         blockchain. Free, and no wallet needed.

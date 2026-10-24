@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Leaderboard, latestPerModel, medianRun, plainCounts } from "../components/Leaderboard";
-import { AnswerSheet, Panel, Stat, StatStrip, Unavailable, useAsync, Words } from "../components/ui";
+import { Reveal, useTilt } from "../components/motion";
+import { AnswerSheet, Panel, Stamp, Stat, StatStrip, Unavailable, useAsync, Words } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { pct, proctor } from "../lib/near";
 import type { Certificate } from "../lib/types";
@@ -43,7 +44,7 @@ export function Home() {
         <HeroResult top={top} loading={loading} error={error} setTitle={data?.set.title} />
       </section>
 
-      <section>
+      <Reveal as="section">
         <StatStrip>
           <Stat label="Models certified" value={loading ? "…" : rows.length} sub="on the featured test" />
           <Stat label="Messages in the test" value={data ? data.set.item_count : dash} sub="sealed, never shown to anyone" />
@@ -54,7 +55,7 @@ export function Home() {
             sub="real messages wrongly flagged"
           />
         </StatStrip>
-      </section>
+      </Reveal>
 
       <section id="results">
         <div className="section-head">
@@ -83,7 +84,7 @@ export function Home() {
         )}
       </section>
 
-      <section>
+      <Reveal as="section">
         <div className="section-head">
           <p className="eyebrow">Why you can trust a result</p>
           <h2>
@@ -120,9 +121,9 @@ export function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </Reveal>
 
-      <section>
+      <Reveal as="section">
         <Panel eyebrow="Read results fairly" title="What a result does and doesn't tell you" className="quiet">
           <ul className="small" style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--ink-secondary)" }}>
             <li>A result speaks for one test, one model version and one point in time. It is not a promise about every scam.</li>
@@ -131,9 +132,9 @@ export function Home() {
             <li>Anyone can publish a test, such as a bank's fraud team. Each test page says who wrote it.</li>
           </ul>
         </Panel>
-      </section>
+      </Reveal>
 
-      <section>
+      <Reveal as="section">
         <div className="panel closing">
           <p className="eyebrow">Get involved</p>
           <h2>
@@ -152,7 +153,7 @@ export function Home() {
             </Link>
           </div>
         </div>
-      </section>
+      </Reveal>
     </>
   );
 }
@@ -181,24 +182,44 @@ function HeroResult({
         <p className="muted">When the first model finishes a test, its answer sheet appears here.</p>
       </Panel>
     );
+  return <HeroDeck top={top} setTitle={setTitle} />;
+}
+
+/** The runs as a fanned stack of glass answer sheets that turns towards the pointer. */
+function HeroDeck({ top, setTitle }: { top: Certificate; setTitle?: string }) {
+  const deck = useTilt<HTMLDivElement>();
   const { index } = medianRun(top);
   const n = plainCounts(top);
   return (
-    <Panel
-      className="hero-card"
-      eyebrow="Top result"
-      title={top.model_id}
-      sub={setTitle ? `on ${setTitle}` : undefined}
-      serial={`No. ${top.eval_id}`}
-    >
-      <AnswerSheet run={top.runs[index]} stamp={pct(top.accuracy_bps)} stampLabel="Average" />
-      <p className="say">
-        Caught <em>{n.caught} of {n.scams}</em> scams and wrongly flagged {n.flagged} of {n.real} real messages.
-      </p>
-      <p className="small muted" style={{ margin: "0.5rem 0 0" }}>
-        Answer sheet from its typical run (run {index + 1} of {top.runs.length}).{" "}
-        <Link to={`/certificates/${top.eval_id}`}>See the full result</Link>
-      </p>
-    </Panel>
+    <div className="scene">
+      <div className="deck-float">
+        <div className="deck" ref={deck}>
+          <div className="shadow" aria-hidden="true" />
+          {top.runs.length > 2 && <div className="ghost g2" aria-hidden="true" />}
+          {top.runs.length > 1 && <div className="ghost g1" aria-hidden="true" />}
+          <div className="front">
+            <Panel
+              className="glass"
+              eyebrow="Top result"
+              title={top.model_id}
+              sub={setTitle ? `on ${setTitle}` : undefined}
+              serial={`No. ${top.eval_id}`}
+            >
+              <AnswerSheet run={top.runs[index]} />
+              <p className="say">
+                Caught <em>{n.caught} of {n.scams}</em> scams and wrongly flagged {n.flagged} of {n.real} real messages.
+              </p>
+              <p className="small muted" style={{ margin: "0.5rem 0 0" }}>
+                Answer sheet from its typical run (run {index + 1} of {top.runs.length}).{" "}
+                <Link to={`/certificates/${top.eval_id}`}>See the full result</Link>
+              </p>
+            </Panel>
+          </div>
+          <div className="float-stamp">
+            <Stamp value={pct(top.accuracy_bps)} label="Average" delay={1.5} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

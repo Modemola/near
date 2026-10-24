@@ -1,11 +1,13 @@
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
+import { SealedCube } from "../components/motion";
 import { PageHead, Panel } from "../components/ui";
 import { config } from "../lib/config";
 
 export function HowPage() {
   return (
     <>
-      <PageHead eyebrow="How it works" title={<>A fair exam, <em>proved</em></>}>
+      <PageHead eyebrow="How it works" title={<>A fair exam, <em>proved</em></>} art={<SealedCube />}>
         A score you can trust needs three things: the model never saw the test, nobody changed the answers, and anyone
         can check the result. Here is how Proctor gets each one.
       </PageHead>
@@ -14,32 +16,32 @@ export function HowPage() {
         <div className="stack">
           <Panel eyebrow="Step by step" title="From sealed test to result">
             <ol className="flow">
-              <li>
+              <li style={{ "--i": 0 } as CSSProperties}>
                 <strong>Someone publishes a test</strong>
                 <p>
                   A fraud team, say, collects scam and real messages and seals them on their own computer. Only one
                   open-source grader program can open the seal, and only inside secure hardware.
                 </p>
               </li>
-              <li>
+              <li style={{ "--i": 1 } as CSSProperties}>
                 <strong>Someone asks for a model to be certified</strong>
                 <p>They pay the test's price plus a refundable deposit for the grading.</p>
               </li>
-              <li>
+              <li style={{ "--i": 2 } as CSSProperties}>
                 <strong>The grader runs the exam in secure hardware</strong>
                 <p>
                   It opens the test, checks its fingerprint, and shows each message to the model, which also runs in
                   secure hardware. Nobody outside can see the messages or the answers.
                 </p>
               </li>
-              <li>
+              <li style={{ "--i": 3 } as CSSProperties}>
                 <strong>The model signs every answer</strong>
                 <p>
                   The hardware the model runs on signs each answer together with the exact question. The grader sends
                   back only totals and those signatures, never the messages.
                 </p>
               </li>
-              <li>
+              <li style={{ "--i": 4 } as CSSProperties}>
                 <strong>NEAR checks it all and records the result</strong>
                 <p>
                   The Proctor contract on NEAR checks every signature before counting it, records the result for good,

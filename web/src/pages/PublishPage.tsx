@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { SealedCube } from "../components/motion";
 import { ErrorNote, Hash, PageHead, Panel, useAsync } from "../components/ui";
 import { parseTestSet, setCommitment, type ParsedSet } from "../lib/commitment";
 import { config } from "../lib/config";
@@ -141,7 +142,7 @@ export function PublishPage() {
 
   return (
     <>
-      <PageHead eyebrow="Publish a test" title={<>Turn your scam examples into a <em>sealed</em> test</>}>
+      <PageHead eyebrow="Publish a test" title={<>Turn your scam examples into a <em>sealed</em> test</>} art={<SealedCube />}>
         Fraud teams, researchers and anyone with real examples can publish a test. Models get graded on it without
         anyone, including us, reading the messages. You earn a share of every certification.
       </PageHead>
@@ -265,7 +266,7 @@ export function PublishPage() {
         </div>
 
         <aside>
-          <Panel eyebrow="Before you publish" title="What happens">
+          <Panel className="glass" eyebrow="Before you publish" title="What happens">
             <dl className="rows">
               <div>
                 <dt>Messages</dt>

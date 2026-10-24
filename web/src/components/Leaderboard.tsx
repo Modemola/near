@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { pct } from "../lib/near";
 import type { Certificate, Confusion } from "../lib/types";
@@ -55,7 +56,7 @@ export function Leaderboard({ certs, setTitle }: { certs: Certificate[]; setTitl
         <span role="columnheader" />
       </div>
       {rows.map((c, i) => (
-        <div className={`board-row${i === 0 ? " first" : ""}`} role="row" key={c.eval_id}>
+        <div className={`board-row${i === 0 ? " first" : ""}`} role="row" key={c.eval_id} style={{ "--i": i } as CSSProperties}>
           <span className="rank" role="cell">
             {i + 1}
           </span>
@@ -69,14 +70,14 @@ export function Leaderboard({ certs, setTitle }: { certs: Certificate[]; setTitl
             <span className="label m-label">Scams caught</span>
             <div className="v">{pct(c.detection_bps)}</div>
             <div className="bar" aria-hidden="true">
-              <div style={{ width: `${c.detection_bps / 100}%` }} />
+              <div style={{ width: `${c.detection_bps / 100}%`, "--d": `${0.3 + i * 0.11}s` } as CSSProperties} />
             </div>
           </div>
           <div className="metric m-flagged" role="cell">
             <span className="label m-label">Real messages flagged</span>
             <div className="v">{pct(c.false_alarm_bps)}</div>
             <div className="bar inverse" aria-hidden="true">
-              <div style={{ width: `${c.false_alarm_bps / 100}%` }} />
+              <div style={{ width: `${c.false_alarm_bps / 100}%`, "--d": `${0.4 + i * 0.11}s` } as CSSProperties} />
             </div>
           </div>
           <div className="metric overall" role="cell">
