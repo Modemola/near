@@ -21,9 +21,9 @@ is honest.
 | 7 | Web | Verification depended on an unconfirmed explorer API and the last 400 transactions, used a node that forgets transactions after days, and never checked the score | The contract records which block and signer dispatched each chunk; verification finds those transactions with plain RPC (archival first), checks each signature once, and recomputes every certified figure | 9 unit tests; e2e "Verify" step on a real chain |
 | 8 | Web | A failed transaction could be reported as a success (for example, publishing a taken id) | After any wallet call the app reads the contract's actual result, and confirms a published test is on-chain as yours | e2e "Publishing the same id again fails in plain words" |
 | 9 | Web | Cancelling in a redirect wallet left the page waiting 3 minutes; a publish was forgotten on return | The wallet's return is read and reported as Cancelled, Failed or Confirmed | 4 unit tests |
+| 10 | Web | Lost batches looked "in progress" forever; the dispatch button could be double-sent; bad ids showed raw RPC errors; the example overwrote typed input | Shown and retried; guarded; "Not found"; only empty fields filled | e2e steps |
 | 11 | Web | On testnet the public RPC rate-limits bursts, so verification (and page loads) could fail with "Can't reach NEAR" | Requests switch to a second public endpoint (FastNEAR) when one is busy, with backoff; verification reads only the signer's shard (about 3 requests per transaction instead of about 20) | 3 unit tests for failover, 2 for shards; both live testnet certificates verify in a browser |
 | 12 | Mock OutLayer | The test stand-in kept every grader output forever and ran out of storage on testnet | It frees each output once delivered | contract integration tests; testnet demo re-run |
-| 10 | Web | Lost batches looked "in progress" forever; the dispatch button could be double-sent; bad ids showed raw RPC errors; the example overwrote typed input | Shown and retried; guarded; "Not found"; only empty fields filled | e2e steps |
 
 ## Known limits (by design, documented)
 
