@@ -93,6 +93,7 @@ fn signed_output(key: &ed25519_dalek::SigningKey, chunk: u32, n: u32, nonce: &st
         .collect();
     serde_json::json!({"success": true, "error": null, "output": {
         "set_id": "scam-v1", "model": "Qwen/Qwen3.8-27B", "chunk": chunk, "nonce": nonce, "n": n,
+        "set_commitment": hex64("set"),
         "confusion": {"tp": n, "fp": 0, "tn": 0, "fn_": 0, "unparsed": 0},
         "signer": hex::encode(key.verifying_key().to_bytes()),
         "attestation_report_sha256": hex64("r"), "answers": answers, "records_digest": hex64("d"),
@@ -241,4 +242,67 @@ fn refuses_evals_before_the_key_is_sealed() {
     p.register_set(new_set());
     context(accounts(3), NearToken::from_near(5));
     p.request_eval("scam-v1".into(), "Qwen/Qwen3.8-27B".into());
+}
+
+#[test]
+fn an_accepted_chunk_emits_its_signed_answers() {
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    context(accounts(0), NearToken::from_yoctonear(0));
+    let mut p = Proctor::new(accounts(0), config());
+    context(accounts(1), NearToken::from_yoctonear(0));
+    let m = model_for(&key);
+    p.register_model(m.model_id, m.signers, m.attestation_report_sha256);
+    context(accounts(2), NearToken::from_near(1));
+    p.register_set(new_set());
+    context(accounts(3), NearToken::from_near(5));
+    let id = p.request_eval("scam-v1".into(), "Qwen/Qwen3.8-27B".into());
+    let eval = p.get_eval(id).unwrap();
+    assert_eq!(eval.chunks[0], ChunkState::InFlight { attempts: 1 });
+
+    context(
+        "proctor.testnet".parse().unwrap(),
+        NearToken::from_yoctonear(0),
+    );
+    let out = signed_output(&key, 0, 2, &eval.nonces[0]);
+    assert!(p.on_chunk(id, 0, 1, Ok(Some(out))));
+
+    let logs = near_sdk::test_utils::get_logs();
+    let event = logs
+        .iter()
+        .find_map(|l| l.strip_prefix("EVENT_JSON:"))
+        .map(|j| serde_json::from_str::<serde_json::Value>(j).unwrap())
+        .expect("an event");
+    assert_eq!(event["standard"], "proctor");
+    assert_eq!(event["event"], "chunk_accepted");
+    let data = &event["data"][0];
+    assert_eq!(data["eval_id"], "0");
+    assert_eq!(data["nonce"], eval.nonces[0].as_str());
+    assert_eq!(data["answers"].as_array().unwrap().len(), 2);
+    assert!(matches!(
+        p.get_eval(id).unwrap().chunks[0],
+        ChunkState::Done { .. }
+    ));
+
+    // The same result delivered again is ignored.
+    context(
+        "proctor.testnet".parse().unwrap(),
+        NearToken::from_yoctonear(0),
+    );
+    assert!(!p.on_chunk(
+        id,
+        0,
+        1,
+        Ok(Some(signed_output(&key, 0, 2, &eval.nonces[0])))
+    ));
+}
+
+#[test]
+fn rejects_a_sealed_set_that_differs_from_its_commitment() {
+    context(accounts(0), NearToken::from_yoctonear(0));
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let (set, model) = (stored_set(), model_for(&key));
+    let mut v: serde_json::Value = serde_json::from_str(&signed_output(&key, 0, 2, "n1")).unwrap();
+    v["output"]["set_commitment"] = serde_json::json!(hex64("a different set"));
+    let e = validate::check_chunk(&v.to_string(), &set, &model, "n1", 0).unwrap_err();
+    assert!(e.contains("commitment"), "{e}");
 }

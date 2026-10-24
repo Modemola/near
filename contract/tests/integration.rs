@@ -161,6 +161,7 @@ fn grader_output(job: &Value, key: &SigningKey, confusion: (u32, u32, u32, u32, 
         "error": null,
         "output": {
             "set_id": job["set_id"], "model": job["model"], "chunk": chunk, "nonce": job["nonce"],
+            "set_commitment": sha("the private set"),
             "n": n,
             "confusion": {"tp": tp, "fp": fp, "tn": tn, "fn_": fn_, "unparsed": unparsed},
             "signer": hex::encode(key.verifying_key().to_bytes()),

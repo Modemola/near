@@ -206,6 +206,7 @@ fn grades_a_chunk_and_counts_no_answer_as_wrong() {
     let r = grade_chunk(&m, "k", &job(0, 10), &items()).unwrap();
     assert_eq!(r.n, 5);
     assert_eq!(r.nonce, NONCE);
+    assert_eq!(r.set_commitment, set_commitment(&items()));
     assert_eq!(
         r.confusion,
         Confusion {
@@ -332,3 +333,37 @@ fn prompt_tells_models_details_are_placeholders() {
     assert!(SYSTEM_PROMPT.contains("still matter"));
     assert!(SYSTEM_PROMPT.ends_with("`LEGIT: <reason>`."));
 }
+
+#[test]
+fn commitment_covers_order_text_and_labels() {
+    let a = items();
+    let base = set_commitment(&a);
+    assert_eq!(base.len(), 64);
+    let mut reordered = a.clone();
+    reordered.swap(0, 1);
+    assert_ne!(set_commitment(&reordered), base);
+    let mut relabelled = a.clone();
+    relabelled[0].label = Label::Legit;
+    assert_ne!(set_commitment(&relabelled), base);
+    let mut edited = a.clone();
+    edited[0].text.push(' ');
+    assert_ne!(set_commitment(&edited), base);
+}
+
+#[test]
+fn commitment_matches_the_javascript_canonical_form() {
+    // JSON.stringify([{id,channel,from,text,label}]) for this item, hashed with
+    // SHA-256: the value the web app computes (see web/src/lib/commitment.test.ts).
+    let tricky = vec![Item {
+        id: "p-1".into(),
+        channel: "sms".into(),
+        from: "Mum (saved contact)".into(),
+        text: "Line one\nnоrthfield 😀 \"quoted\" \\ tab\there".into(),
+        label: Label::Scam,
+    }];
+    assert_eq!(set_commitment(&tricky), JS_COMMITMENT_OF_TRICKY);
+}
+
+/// Computed with Node: see web/src/lib/commitment.test.ts, which asserts the same value.
+const JS_COMMITMENT_OF_TRICKY: &str =
+    "6f1539f38a1105ba09e4d2c9620c748c49158b8eb64e4cdbb9efdf0bb0358685";

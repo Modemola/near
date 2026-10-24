@@ -134,6 +134,9 @@ pub enum ChunkState {
         confusion: Confusion,
         records_digest: String,
         signer: String,
+        /// Block in which the chunk was accepted; its `chunk_accepted` event
+        /// (with every signed answer) is in that block's receipt outcomes.
+        block_height: U64,
     },
     Failed {
         attempts: u8,
@@ -332,7 +335,7 @@ impl Proctor {
             "commitment must be lowercase hex SHA-256"
         );
         require!((1..=10_000).contains(&set.item_count), "1 to 10000 items");
-        require!((1..=100).contains(&set.chunk_size), "chunk size 1 to 100");
+        require!((1..=40).contains(&set.chunk_size), "chunk size 1 to 40");
         require!(
             (256..=32_000).contains(&set.max_tokens),
             "max tokens 256 to 32000"
@@ -487,7 +490,10 @@ impl Proctor {
             &env::predecessor_account_id(),
             NearToken::from_yoctonear(attached - required),
         );
-        env::log_str(&format!("eval {id} requested"));
+        emit(
+            "eval_requested",
+            json!({"eval_id": U64(id), "set_id": set.set_id, "requester": env::predecessor_account_id()}),
+        );
         self.dispatch_jobs(id);
         U64(id)
     }
@@ -538,10 +544,27 @@ impl Proctor {
         };
         match verdict {
             Ok(report) => {
+                emit(
+                    "chunk_accepted",
+                    json!({
+                        "eval_id": eval_id,
+                        "index": index,
+                        "run": run,
+                        "chunk": chunk,
+                        "set_id": eval.set_id,
+                        "model_id": eval.model_id,
+                        "nonce": eval.nonces[run],
+                        "signer": report.signer,
+                        "records_digest": report.records_digest,
+                        "confusion": report.confusion,
+                        "answers": report.answers.iter().map(|(t, s)| json!({"text": t, "signature": s})).collect::<Vec<_>>(),
+                    }),
+                );
                 eval.chunks[i] = ChunkState::Done {
                     confusion: report.confusion,
                     records_digest: report.records_digest,
                     signer: report.signer,
+                    block_height: U64(env::block_height()),
                 };
             }
             Err(error) => {
@@ -829,7 +852,10 @@ impl Proctor {
         );
         refund(&eval.requester, NearToken::from_yoctonear(eval.escrow.0));
         eval.escrow = U128(0);
-        env::log_str(&format!("eval {} certified", eval.id.0));
+        emit(
+            "eval_certified",
+            json!({"eval_id": eval.id, "set_id": set.set_id, "model_id": eval.model_id}),
+        );
     }
 
     fn fail(&mut self, eval: &mut Eval, reason: &str) {
@@ -840,8 +866,16 @@ impl Proctor {
             NearToken::from_yoctonear(eval.price.0 + eval.escrow.0),
         );
         eval.escrow = U128(0);
-        env::log_str(&format!("eval {} failed: {reason}", eval.id.0));
+        emit("eval_failed", json!({"eval_id": eval.id, "reason": reason}));
     }
+}
+
+/// Log a NEP-297 event: `EVENT_JSON:{"standard":"proctor",...}`.
+fn emit(event: &str, data: near_sdk::serde_json::Value) {
+    env::log_str(&format!(
+        "EVENT_JSON:{}",
+        json!({"standard": "proctor", "version": "1.0.0", "event": event, "data": [data]})
+    ));
 }
 
 fn refund(to: &AccountId, amount: NearToken) {

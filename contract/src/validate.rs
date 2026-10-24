@@ -48,6 +48,7 @@ struct Output {
     model: String,
     chunk: u32,
     nonce: String,
+    set_commitment: String,
     n: u32,
     confusion: Confusion,
     signer: String,
@@ -68,6 +69,9 @@ pub struct ChunkReport {
     pub confusion: Confusion,
     pub records_digest: String,
     pub signer: String,
+    /// The signed statements, as (text, signature hex). Emitted in the
+    /// `chunk_accepted` event so anyone can re-verify them; not stored.
+    pub answers: Vec<(String, String)>,
 }
 
 fn decode_hex<const N: usize>(s: &str) -> Option<[u8; N]> {
@@ -100,6 +104,9 @@ pub fn check_chunk(
 
     if o.set_id != set.set_id || o.model != model.model_id || o.chunk != chunk || o.nonce != nonce {
         return Err("result is for a different set, model, chunk or run".into());
+    }
+    if o.set_commitment != set.commitment {
+        return Err("the sealed set does not match the set's registered commitment".into());
     }
     let start = chunk
         .checked_mul(set.chunk_size)
@@ -154,5 +161,10 @@ pub fn check_chunk(
         confusion: o.confusion,
         records_digest: o.records_digest,
         signer: o.signer,
+        answers: o
+            .answers
+            .into_iter()
+            .map(|a| (a.text, a.signature))
+            .collect(),
     })
 }

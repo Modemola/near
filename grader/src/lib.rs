@@ -98,6 +98,8 @@ pub struct ChunkResult {
     /// The run's nonce, echoed so the contract can tie the result to the run
     /// it dispatched; the attestation report was fetched with it.
     pub nonce: String,
+    /// [`set_commitment`] of the whole sealed set this run decrypted.
+    pub set_commitment: String,
     pub n: u32,
     pub confusion: Confusion,
     /// The model's Ed25519 signing key (hex) from its attestation report.
@@ -126,6 +128,33 @@ pub trait Http {
     fn post(&self, url: &str, headers: &[(&str, &str)], body: &[u8]) -> Result<Response, String>;
     /// Wait between retries. A no-op in tests.
     fn pause(&self, _attempt: usize) {}
+}
+
+/// The set's commitment: SHA-256 (hex) of the items as a compact JSON array of
+/// `{"id","channel","from","text","label"}` objects, in set order. The web
+/// app computes the same bytes with `JSON.stringify` before the author
+/// registers the set; the grader recomputes it on the sealed set so the
+/// contract can check they match.
+pub fn set_commitment(items: &[Item]) -> String {
+    #[derive(Serialize)]
+    struct Canon<'a> {
+        id: &'a str,
+        channel: &'a str,
+        from: &'a str,
+        text: &'a str,
+        label: Label,
+    }
+    let canon: Vec<Canon> = items
+        .iter()
+        .map(|i| Canon {
+            id: &i.id,
+            channel: &i.channel,
+            from: &i.from,
+            text: &i.text,
+            label: i.label,
+        })
+        .collect();
+    sha256_hex(&serde_json::to_vec(&canon).expect("items serialise"))
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
@@ -395,6 +424,7 @@ pub fn grade_chunk(
         model: job.model.clone(),
         chunk: job.chunk,
         nonce: job.nonce.clone(),
+        set_commitment: set_commitment(items),
         n: chunk.len() as u32,
         confusion,
         signer,
