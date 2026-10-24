@@ -1,7 +1,8 @@
 import { useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
-import { medianRun, rangeText } from "../components/Leaderboard";
-import { AnswerSheet, ErrorNote, Hash, Loading, PageHead, Panel, Stamp, Stat, StatStrip, useAsync } from "../components/ui";
+import { CertificateDoc } from "../components/CertificateDoc";
+import { medianRun } from "../components/Leaderboard";
+import { AnswerSheet, ErrorNote, Hash, Loading, PageHead, Panel, Stamp, useAsync } from "../components/ui";
 import { config } from "../lib/config";
 import { friendlyError } from "../lib/errors";
 import { codeHash, pct, proctor } from "../lib/near";
@@ -43,23 +44,9 @@ export function CertificatePage() {
 
   return (
     <>
-      <PageHead eyebrow={`Certified result · No. ${cert.eval_id}`} title={<span className="vt-name" style={{ viewTransitionName: `model-${cert.eval_id}` } as CSSProperties}>{cert.model_id}</span>}>
-        On <Link viewTransition to={`/sets/${cert.set_id}`}>{set?.title ?? cert.set_id}</Link>: tested {cert.runs.length} times on{" "}
-        {cert.item_count} sealed messages it had never seen.
-      </PageHead>
+      <CertificateDoc cert={cert} set={set} />
 
-      <StatStrip>
-        <Stat hero label="Scams caught" value={pct(cert.detection_bps)} sub="average across runs" />
-        <Stat label="Real messages flagged" value={pct(cert.false_alarm_bps)} sub="wrongly marked as scams" />
-        <Stat
-          label="Overall"
-          value={pct(cert.accuracy_bps)}
-          sub={rangeText(cert)}
-        />
-        <Stat label="Recorded at block" value={Number(cert.issued_at_block).toLocaleString("en-US")} sub={`on NEAR ${config.networkId}`} />
-      </StatStrip>
-
-      <section className="split" style={{ marginTop: "2rem" }}>
+      <section className="split" style={{ marginTop: 0 }}>
         <div className="stack">
           <Panel
             eyebrow="Answer sheet"

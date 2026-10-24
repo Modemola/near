@@ -7,6 +7,7 @@ import { config } from "../lib/config";
 import { friendlyError, isCancel } from "../lib/errors";
 import { explorerTx, proctor, txHashOf } from "../lib/near";
 import { useToasts } from "../lib/toasts";
+import { FingerprintSeal } from "../components/Seal";
 import { useWallet } from "../lib/wallet";
 
 /** Storage deposit for registering a set; the contract refunds what it doesn't use. */
@@ -190,6 +191,13 @@ export function PublishPage() {
                     <Hash value={file.commitment} />
                   </dd>
                 </div>
+                <div className="publish-seal">
+                  <FingerprintSeal key={file.commitment} hash={file.commitment} size={150} caption="YOUR TEST" />
+                  <span className="small muted">
+                    Your test's seal. It is drawn from the fingerprint, so any change to a single message gives a
+                    different seal.
+                  </span>
+                </div>
               </dl>
             )}
           </Panel>
@@ -267,6 +275,12 @@ export function PublishPage() {
 
         <aside>
           <Panel className="glass" eyebrow="Before you publish" title="What happens">
+            {file && (
+              <div className="seal-chip" style={{ marginBottom: "0.8rem" }}>
+                <FingerprintSeal key={file.commitment} hash={file.commitment} size={52} />
+                <span className="small">Sealed as {file.commitment.slice(0, 10)}…</span>
+              </div>
+            )}
             <dl className="rows">
               <div>
                 <dt>Messages</dt>

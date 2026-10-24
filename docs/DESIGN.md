@@ -89,3 +89,22 @@ Motion that tells Proctor's story, each piece tied to what the product does:
   turning towards the pointer. Loaded as its own chunk only on those pages,
   paused off-screen, with the CSS cube as the fallback without WebGL or with
   reduced motion.
+
+## Certificates you can't fake (revision 5)
+
+One idea across the design: a Proctor result is a certificate that can't be
+faked, so it looks like one.
+
+- **Certificate page**: security printing as on banknotes and diplomas:
+  guilloché bands and microprint drawn from the test's fingerprint, a serial
+  number, oversized editorial figures, a watermark seal, copy link and print.
+- **Holographic foil seal**: only on certificates, so it keeps its meaning;
+  its sheen follows the pointer, or the phone's tilt.
+- **Fingerprint seals**: every test gets a seal drawn from all 256 bits of
+  its fingerprint (`web/src/lib/sealArt.ts`, tested): woven guilloché bands
+  and a ring of 96 ticks. Changing a single bit redraws it. Shown on test
+  pages, test cards, certificates, the bento grid, and live on Publish when
+  you choose a file.
+- **Bento grid** of live figures on the landing page, in place of the stat
+  strip.
+- **Paper grain** on every surface.

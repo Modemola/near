@@ -7,6 +7,7 @@ import { explorerTx, formatNear, proctor, txHashOf } from "../lib/near";
 import { useToasts } from "../lib/toasts";
 import type { ContractConfig, TestSet } from "../lib/types";
 import { useWallet } from "../lib/wallet";
+import { FingerprintSeal } from "../components/Seal";
 import { config as app } from "../lib/config";
 
 /** Extra deposit for the eval's storage; the contract refunds what it doesn't use. */
@@ -38,7 +39,16 @@ export function SetPage() {
 
   return (
     <>
-      <PageHead eyebrow={set.active ? "Test" : "Test · retired"} title={set.title}>
+      <PageHead
+        eyebrow={set.active ? "Test" : "Test · retired"}
+        title={set.title}
+        art={
+          <div className="set-seal">
+            <FingerprintSeal hash={set.commitment} size={230} spin caption="SEALED TEST" />
+            <span className="label">This test's seal, drawn from its fingerprint</span>
+          </div>
+        }
+      >
         {set.description}
       </PageHead>
       <StatStrip>

@@ -117,12 +117,28 @@ export function useTilt<T extends HTMLElement>(maxX = 10, maxY = 14, rest = { rx
 }
 
 /** Page-wide effects: the cursor spotlight on panels and the scroll progress bar. */
+/** Foil catches the light from the pointer (or the phone's tilt): dx, dy in about -1..1. */
+function lightFoil(dx: number, dy: number) {
+  document.querySelectorAll<HTMLElement>(".foil").forEach((el) => {
+    el.style.setProperty("--fx", `${(50 + dx * 45).toFixed(1)}%`);
+    el.style.setProperty("--fy", `${(45 + dy * 45).toFixed(1)}%`);
+    el.style.setProperty("--fa", `${(dx * 140 + dy * 60).toFixed(1)}deg`);
+  });
+}
+
 export function useAmbientMotion() {
   useEffect(() => {
     let raf = 0;
+    const still = reducedMotion();
+    const onTilt = (e: DeviceOrientationEvent) => {
+      if (still || e.gamma == null || e.beta == null) return;
+      lightFoil(Math.max(-1, Math.min(1, e.gamma / 35)), Math.max(-1, Math.min(1, (e.beta - 45) / 35)));
+    };
+    window.addEventListener("deviceorientation", onTilt, { passive: true });
     const fine = window.matchMedia("(pointer: fine)").matches && !reducedMotion();
     let magnet: HTMLElement | null = null;
     const onMove = (e: PointerEvent) => {
+      if (!still) lightFoil((e.clientX / window.innerWidth - 0.5) * 2, (e.clientY / window.innerHeight - 0.5) * 2);
       const btn = fine ? ((e.target as Element | null)?.closest?.(".btn:not(:disabled)") as HTMLElement | null) : null;
       if (magnet && magnet !== btn) {
         magnet.style.setProperty("--tx", "0px");
@@ -166,6 +182,7 @@ export function useAmbientMotion() {
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerout", onLeave as EventListener);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("deviceorientation", onTilt);
       cancelAnimationFrame(raf);
     };
   }, []);

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { GlassVault } from "../components/GlassVault";
 import { Loading, PageHead, Panel, Unavailable, useAsync } from "../components/ui";
 import { isConfigured } from "../lib/config";
+import { FingerprintSeal } from "../components/Seal";
 import { formatNear, proctor } from "../lib/near";
 
 export function Sets() {
@@ -22,9 +23,12 @@ export function Sets() {
             title={<Link viewTransition to={`/sets/${s.set_id}`}>{s.title}</Link>}
             serial={s.set_id}
           >
-            <p className="small" style={{ color: "var(--ink-secondary)" }}>
-              {s.description}
-            </p>
+            <div className="set-card-top">
+              <p className="small" style={{ color: "var(--ink-secondary)", margin: 0 }}>
+                {s.description}
+              </p>
+              <FingerprintSeal hash={s.commitment} size={74} />
+            </div>
             <dl className="rows">
               <div>
                 <dt>Messages</dt>

@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { Leaderboard, latestPerModel, medianRun, plainCounts } from "../components/Leaderboard";
+import { Bento } from "../components/Bento";
 import { ExamStory } from "../components/ExamStory";
 import { Reveal, useTilt } from "../components/motion";
 import { ScanStrip } from "../components/ScanStrip";
-import { AnswerSheet, Panel, Stamp, Stat, StatStrip, Unavailable, useAsync, Words } from "../components/ui";
+import { AnswerSheet, Panel, Stamp, Unavailable, useAsync, Words } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { pct, proctor } from "../lib/near";
 import type { Certificate } from "../lib/types";
@@ -18,9 +19,6 @@ export function Home() {
   }, []);
   const rows = data ? latestPerModel(data.certs) : [];
   const top = rows[0];
-  const bestCatch = rows.length ? Math.max(...rows.map((c) => c.detection_bps)) : null;
-  const fewestFlags = rows.length ? Math.min(...rows.map((c) => c.false_alarm_bps)) : null;
-  const dash = loading ? "…" : "None yet";
 
   return (
     <>
@@ -46,18 +44,9 @@ export function Home() {
         <HeroResult top={top} loading={loading} error={error} setTitle={data?.set.title} />
       </section>
 
-      <Reveal as="section">
-        <StatStrip>
-          <Stat label="Models certified" value={loading ? "…" : rows.length} sub="on the featured test" />
-          <Stat label="Messages in the test" value={data ? data.set.item_count : dash} sub="sealed, never shown to anyone" />
-          <Stat hero label="Most scams caught" value={bestCatch === null ? dash : pct(bestCatch)} sub="best model on this test" />
-          <Stat
-            label="Fewest false alarms"
-            value={fewestFlags === null ? dash : pct(fewestFlags)}
-            sub="real messages wrongly flagged"
-          />
-        </StatStrip>
-      </Reveal>
+      <section>
+        <Bento set={data?.set} rows={rows} loading={loading} />
+      </section>
 
       <Reveal as="section">
         <div className="section-head">
