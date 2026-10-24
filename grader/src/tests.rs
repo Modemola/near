@@ -205,6 +205,7 @@ fn grades_a_chunk_and_counts_no_answer_as_wrong() {
     let m = mock_with_answers();
     let r = grade_chunk(&m, "k", &job(0, 10), &items()).unwrap();
     assert_eq!(r.n, 5);
+    assert_eq!(r.nonce, NONCE);
     assert_eq!(
         r.confusion,
         Confusion {

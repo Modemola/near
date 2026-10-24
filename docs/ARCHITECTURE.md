@@ -109,6 +109,36 @@ Flow:
 - Leakage controls: a submission cap per (set, model); only aggregate scores
   are published, never which items were right.
 
+As built (`contract/`, tested by `contract/scripts/test.sh`):
+
+- **`dispatch(eval_id)` is permissionless.** Each OutLayer job needs about
+  105 TGas (75 attached to `request_execution`, which reserves 50 for its own
+  callback, plus 30 for `on_chunk`), so a 300 TGas transaction starts only 2
+  jobs. `request_eval` starts the first ones; anyone (the web app, a keeper
+  with a function-call key) calls `dispatch` for the rest. The work is paid
+  from the eval's escrow, so callers need no trust.
+- **Escrow** is `price + job_deposit x chunks x runs x 3 attempts`. OutLayer
+  refunds each job's unused deposit to the requester (`payer_account_id`);
+  the contract returns the unspent escrow when the eval ends.
+- **Clients must not wait for `request_eval` or `dispatch` to finish.** Their
+  OutLayer callbacks stay pending until the grader answers (or NEAR times the
+  yield out after about 200 blocks). Submit, wait until the transaction is
+  included, then poll `eval_count` / `get_eval`. The integration tests found
+  this the hard way: a client that waits times out and resends, starting
+  duplicate evals.
+- **Large results:** a yield can only be resumed with 1024 bytes; a chunk
+  result with signatures is several KB. OutLayer's two-call flow stores the
+  output in its state and returns it from its callback; the mock OutLayer used
+  in tests does the same.
+- **A chunk is accepted only if** it is for this set, model, chunk and run
+  nonce; it has the right item count; its counts add up, with unparsed answers
+  counted as wrong; it is signed by a registered key of the model; no request
+  hash repeats; and every answer's Ed25519 signature verifies on-chain.
+  Otherwise the chunk fails. After 3 failed attempts on one chunk, the eval
+  fails and the price and escrow are refunded.
+- Release build: about 300 KB, so about 3 NEAR of storage to deploy on
+  mainnet.
+
 Rules from OutLayer's `building-outlayer-apps` skill:
 
 - Pin a `rust-toolchain.toml`. Build contracts only with `cargo near build`.

@@ -95,6 +95,9 @@ pub struct ChunkResult {
     pub set_id: String,
     pub model: String,
     pub chunk: usize,
+    /// The run's nonce, echoed so the contract can tie the result to the run
+    /// it dispatched; the attestation report was fetched with it.
+    pub nonce: String,
     pub n: u32,
     pub confusion: Confusion,
     /// The model's Ed25519 signing key (hex) from its attestation report.
@@ -391,6 +394,7 @@ pub fn grade_chunk(
         set_id: job.set_id.clone(),
         model: job.model.clone(),
         chunk: job.chunk,
+        nonce: job.nonce.clone(),
         n: chunk.len() as u32,
         confusion,
         signer,
