@@ -156,17 +156,39 @@ export async function checkEvents(ev: Eval, cert: Certificate, events: ChunkAcce
 
 // ---- Finding the transactions with plain RPC --------------------------------
 
+/** Set once the archival node proves unreachable, so it isn't retried for every call. */
+let archivalDown = false;
+
 /** RPC with the archival node first (it keeps old transactions), then the regular one. */
 async function rpcArchival<T>(method: string, params: unknown): Promise<T> {
-  if (config.archivalRpcUrl && config.archivalRpcUrl !== config.rpcUrl) {
+  if (!archivalDown && config.archivalRpcUrl && config.archivalRpcUrl !== config.rpcUrl) {
     try {
       return await rpc<T>(method, params, config.archivalRpcUrl);
-    } catch {
-      /* fall back */
+    } catch (e) {
+      if (e instanceof TypeError) archivalDown = true; // unreachable (network or CORS)
     }
   }
   return rpc<T>(method, params);
 }
+
+/**
+ * The shard that holds an account's transactions under a NEAR shard layout
+ * (V1 to V3): accounts are split by sorted boundary accounts.
+ */
+export function shardIdOf(accountId: string, layout: unknown): number | null {
+  const v = layout && typeof layout === "object" ? Object.values(layout as Record<string, unknown>)[0] : null;
+  const l = v as { boundary_accounts?: string[]; shard_ids?: number[] } | null;
+  if (!l?.boundary_accounts) return null;
+  const index = l.boundary_accounts.filter((b) => accountId >= b).length;
+  return l.shard_ids ? l.shard_ids[index] ?? null : index;
+}
+
+let layoutCache: Promise<unknown> | null = null;
+const shardLayout = () =>
+  (layoutCache ??= rpc<{ shard_layout: unknown }>("EXPERIMENTAL_protocol_config", { finality: "final" }).then(
+    (c) => c.shard_layout,
+    () => null,
+  ));
 
 interface BlockView {
   header: { height: number };
@@ -187,6 +209,7 @@ export async function findDispatchTxs(
   signer: string,
   receiver: string,
   call: <T>(method: string, params: unknown) => Promise<T> = rpcArchival,
+  shardId: number | null = null,
 ): Promise<string[]> {
   const found = new Set<string>();
   // The dispatching receipt runs in the block that includes the transaction or
@@ -202,7 +225,10 @@ export async function findDispatchTxs(
       } catch {
         continue; // skipped height
       }
-      for (const c of block.chunks) {
+      // A transaction lands in its signer's shard; read only that chunk when
+      // the shard is known (and every chunk if the layout has changed since).
+      const inShard = shardId === null ? [] : block.chunks.filter((c) => c.shard_id === shardId);
+      for (const c of inShard.length ? inShard : block.chunks) {
         if (c.height_included !== h || c.tx_root === EMPTY_ROOT) continue;
         const chunk = await call<ChunkView>("chunk", { chunk_id: c.chunk_hash });
         for (const t of chunk.transactions) if (t.signer_id === signer && t.receiver_id === receiver) found.add(t.hash);
@@ -239,15 +265,16 @@ export async function verifyEval(evalId: string, onProgress?: (msg: string) => v
   const txs = new Map<string, string>(); // hash -> signer
   let done = 0;
   onProgress?.(`Finding ${lookups.length} transactions on NEAR…`);
-  await pool(lookups, 4, async (g) => {
-    for (const hash of await findDispatchTxs(g.height, g.by, config.contractId)) txs.set(hash, g.by);
+  const layout = await shardLayout();
+  await pool(lookups, 2, async (g) => {
+    for (const hash of await findDispatchTxs(g.height, g.by, config.contractId, rpcArchival, shardIdOf(g.by, layout))) txs.set(hash, g.by);
     onProgress?.(`Finding transactions on NEAR: ${++done} of ${lookups.length}…`);
   });
 
   const events: ChunkAcceptedEvent[] = [];
   done = 0;
   const list = [...txs.entries()];
-  await pool(list, 4, async ([hash, signer]) => {
+  await pool(list, 2, async ([hash, signer]) => {
     try {
       const tx = await rpcArchival<TxOutcome>("EXPERIMENTAL_tx_status", { tx_hash: hash, sender_account_id: signer, wait_until: "NONE" });
       events.push(...chunkEvents(tx, config.contractId));

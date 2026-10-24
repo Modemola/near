@@ -75,6 +75,7 @@ writeFileSync(
     `VITE_CONTRACT_ID=${proctor.id}`,
     `VITE_RPC_URL=${RPC}`,
     `VITE_ARCHIVAL_RPC_URL=${RPC}`,
+    "VITE_RPC_FALLBACK_URLS=",
     "VITE_FEATURED_SET=",
     `VITE_DEV_ACCOUNT_ID=${alice.id}`,
     `VITE_DEV_PRIVATE_KEY=${alice.key}`,

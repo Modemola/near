@@ -107,11 +107,15 @@ impl MockOutlayer {
         request_id: u64,
         #[callback_result] response: Result<String, PromiseError>,
     ) -> Option<String> {
-        let r = self
+        let mut r = self
             .requests
             .get(&request_id)
             .cloned()
             .expect("no such request");
+        // Deliver the output once and free its storage, so the mock's state
+        // doesn't grow with every job.
+        let output = r.output.take();
+        self.requests.insert(request_id, r.clone());
         // Like OutLayer: keep a small fee and refund the rest to the payer.
         let fee = NearToken::from_millinear(1).as_yoctonear().min(r.deposit.0);
         if r.deposit.0 > fee {
@@ -120,7 +124,7 @@ impl MockOutlayer {
                 .detach();
         }
         match response {
-            Ok(_) => r.output,
+            Ok(_) => output,
             Err(_) => env::panic_str("execution timed out"),
         }
     }

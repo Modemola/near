@@ -2,7 +2,7 @@ import * as ed from "@noble/ed25519";
 import { describe, expect, it } from "vitest";
 import type { TxOutcome } from "./near";
 import type { Certificate, ChunkAcceptedEvent, Confusion, Eval } from "./types";
-import { certificateFigures, checkEvents, chunkEvents, findDispatchTxs, hexToBytes, signedText, verifyAnswer } from "./verify";
+import { certificateFigures, checkEvents, chunkEvents, findDispatchTxs, hexToBytes, shardIdOf, signedText, verifyAnswer } from "./verify";
 
 const MODEL = "Qwen/Qwen3.8-27B";
 const toHex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -158,5 +158,25 @@ describe("chunkEvents", () => {
       ],
     } as TxOutcome;
     expect(chunkEvents(tx, "proctor.testnet")).toEqual([ev]);
+  });
+});
+
+describe("shardIdOf", () => {
+  // Testnet's layout on 2026-10-24.
+  const layout = {
+    V3: {
+      boundary_accounts: ["650", "aurora", "aurora-0", "dev-1662050149030-28642112951491-0", "earn.kaiching", "game.hot.tg", "game.hot.tg-0", "kkuuue2akv_1630967379.near", "tge-lockup.sweat"],
+      shard_ids: [10, 11, 1, 12, 13, 9, 6, 7, 4, 5],
+    },
+  };
+  it("places accounts by their sorted boundaries", () => {
+    expect(shardIdOf("certspike-1a6b29.testnet", layout)).toBe(12);
+    expect(shardIdOf("100.testnet", layout)).toBe(10);
+    expect(shardIdOf("zzz.testnet", layout)).toBe(5);
+    expect(shardIdOf("aurora", layout)).toBe(1);
+  });
+  it("is null for an unknown layout, and V1 layouts use indices", () => {
+    expect(shardIdOf("a", null)).toBeNull();
+    expect(shardIdOf("b", { V1: { boundary_accounts: ["a"] } })).toBe(1);
   });
 });

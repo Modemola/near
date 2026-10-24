@@ -3,6 +3,14 @@ export const config = {
   networkId: (import.meta.env.VITE_NETWORK_ID ?? "testnet") as "testnet" | "mainnet",
   contractId: import.meta.env.VITE_CONTRACT_ID ?? "",
   rpcUrl: import.meta.env.VITE_RPC_URL ?? "https://rpc.testnet.near.org",
+  /** Other public RPC endpoints to use when rpcUrl is busy (comma-separated; empty for none). */
+  rpcFallbackUrls: (
+    (import.meta.env.VITE_RPC_FALLBACK_URLS as string | undefined) ??
+    ((import.meta.env.VITE_NETWORK_ID ?? "testnet") === "mainnet" ? "https://rpc.mainnet.fastnear.com" : "https://rpc.testnet.fastnear.com")
+  )
+    .split(",")
+    .map((u: string) => u.trim())
+    .filter(Boolean) as string[],
   /**
    * Keeps old transactions (regular RPC nodes drop them after a few days), so
    * results stay verifiable. Verification falls back to rpcUrl if unreachable.

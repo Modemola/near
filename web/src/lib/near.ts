@@ -4,17 +4,37 @@ import type { Certificate, ContractConfig, Eval, Model, TestSet } from "./types"
 
 let nextId = 1;
 
-/** Public RPC nodes rate-limit bursts; retry network failures and 429s twice with backoff. */
-export async function rpc<T>(method: string, params: unknown, url = config.rpcUrl): Promise<T> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await rpcOnce<T>(method, params, url);
-    } catch (e) {
-      const retryable = e instanceof TypeError || (e instanceof Error && /HTTP (429|50\d)/.test(e.message));
-      if (!retryable || attempt >= 2) throw e;
-      await new Promise((r) => setTimeout(r, 600 * 2 ** attempt));
+const retryable = (e: unknown) => e instanceof TypeError || (e instanceof Error && /HTTP (408|429|5\d\d)/.test(e.message));
+
+/** The endpoint that answered last, so a busy one isn't tried first every time. */
+let preferred = 0;
+
+/**
+ * NEAR JSON-RPC. Public nodes rate-limit bursts (and a refused request can
+ * look like a network error in a browser), so a busy or unreachable endpoint
+ * hands over to the next one in config.rpcUrl + rpcFallbackUrls, with
+ * backoff between rounds. Errors the chain itself returns are not retried.
+ * With an explicit `url` (the archival node), only that endpoint is tried once.
+ */
+export async function rpc<T>(method: string, params: unknown, url?: string): Promise<T> {
+  if (url) return rpcOnce<T>(method, params, url);
+  const list = [config.rpcUrl, ...config.rpcFallbackUrls.filter((u) => u !== config.rpcUrl)];
+  let last: unknown;
+  for (let round = 0; round < 4; round++) {
+    for (let k = 0; k < list.length; k++) {
+      const i = (preferred + k) % list.length;
+      try {
+        const result = await rpcOnce<T>(method, params, list[i]);
+        preferred = i;
+        return result;
+      } catch (e) {
+        if (!retryable(e)) throw e;
+        last = e;
+      }
     }
+    if (round < 3) await new Promise((r) => setTimeout(r, 800 * 2 ** round));
   }
+  throw last;
 }
 
 async function rpcOnce<T>(method: string, params: unknown, url: string): Promise<T> {
