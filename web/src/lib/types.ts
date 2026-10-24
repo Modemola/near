@@ -46,8 +46,10 @@ export interface TestSet {
 
 export type ChunkState =
   | { state: "Pending"; attempts: number }
-  | { state: "InFlight"; attempts: number }
-  | { state: "Done"; confusion: Confusion; records_digest: string; signer: string; block_height: string }
+  /** `since`: block it was dispatched in; `by`: who signed that transaction. */
+  | { state: "InFlight"; attempts: number; since: string; by: string }
+  /** `dispatched_at` and `by` locate the transaction whose outcome holds the chunk's event. */
+  | { state: "Done"; confusion: Confusion; block_height: string; dispatched_at: string; by: string }
   | { state: "Failed"; attempts: number; error: string };
 
 export type EvalStatus = "Running" | "Certified" | "Failed";
@@ -63,7 +65,10 @@ export interface Eval {
   price: string;
   job_deposit: string;
   escrow: string;
+  grader_url: string;
   grader_hash: string;
+  /** Model keys that signed accepted chunks. */
+  signers: string[];
   chunks: ChunkState[];
   status: EvalStatus;
   error: string | null;
@@ -101,5 +106,6 @@ export interface ChunkAcceptedEvent {
   signer: string;
   records_digest: string;
   confusion: Confusion;
-  answers: { text: string; signature: string }[];
+  /** Each signed text is `${model_id}:${req}:${resp}`. */
+  answers: { req: string; resp: string; sig: string }[];
 }

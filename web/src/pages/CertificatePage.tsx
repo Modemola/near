@@ -8,6 +8,7 @@ import { friendlyError } from "../lib/errors";
 import { codeHash, pct, proctor } from "../lib/near";
 import type { Confusion } from "../lib/types";
 import { verifyEval, type VerifyReport } from "../lib/verify";
+import { isIdParam } from "../lib/walletReturn";
 
 const accuracy = (c: Confusion) => {
   const n = c.tp + c.fp + c.tn + c.fn_;
@@ -18,6 +19,7 @@ export function CertificatePage() {
   const { evalId = "" } = useParams();
   const [picked, setPicked] = useState<number | null>(null);
   const { data, error, loading } = useAsync(async () => {
+    if (!isIdParam(evalId)) return null;
     const cert = await proctor.certificate(evalId);
     if (!cert) return null;
     const [set, model, contractCode] = await Promise.all([
@@ -208,7 +210,8 @@ function Verify({ evalId, answers }: { evalId: string; answers: number }) {
     report &&
     report.missing.length === 0 &&
     report.answersValid === report.answersChecked &&
-    report.chunks.every((c) => c.problems.length === 0);
+    report.chunks.every((c) => c.problems.length === 0) &&
+    report.totalsMatch;
   return (
     <Panel className="glass" eyebrow="Check it yourself" title="Verify every answer">
       <p className="small" style={{ color: "var(--ink-secondary)" }}>
@@ -259,7 +262,8 @@ function Verify({ evalId, answers }: { evalId: string; answers: number }) {
           {ok ? (
             <>
               <strong>All {report.answersChecked} answers check out.</strong> Every one was signed by the model's
-              registered key, across {report.chunks.length} batches.
+              key, across {report.chunks.length} batches, and together they add up to every number on this
+              certificate.
             </>
           ) : (
             <>
@@ -267,6 +271,13 @@ function Verify({ evalId, answers }: { evalId: string; answers: number }) {
                 {report.answersValid} of {report.answersChecked} answers check out.
               </strong>
               {report.missing.length > 0 && <> Couldn't find the records for batches {report.missing.join(", ")}.</>}
+              {report.totalsProblems.length > 0 && (
+                <ul>
+                  {report.totalsProblems.map((p) => (
+                    <li key={p}>{p}</li>
+                  ))}
+                </ul>
+              )}
               <ul>
                 {report.chunks
                   .filter((c) => c.problems.length)

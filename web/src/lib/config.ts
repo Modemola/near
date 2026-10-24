@@ -3,8 +3,15 @@ export const config = {
   networkId: (import.meta.env.VITE_NETWORK_ID ?? "testnet") as "testnet" | "mainnet",
   contractId: import.meta.env.VITE_CONTRACT_ID ?? "",
   rpcUrl: import.meta.env.VITE_RPC_URL ?? "https://rpc.testnet.near.org",
-  /** Finds transaction hashes for an account; verification data itself comes from RPC. */
-  txLookupUrl: import.meta.env.VITE_TX_LOOKUP_URL ?? "https://tx.test.fastnear.com",
+  /**
+   * Keeps old transactions (regular RPC nodes drop them after a few days), so
+   * results stay verifiable. Verification falls back to rpcUrl if unreachable.
+   */
+  archivalRpcUrl:
+    import.meta.env.VITE_ARCHIVAL_RPC_URL ??
+    ((import.meta.env.VITE_NETWORK_ID ?? "testnet") === "mainnet"
+      ? "https://archival-rpc.mainnet.near.org"
+      : "https://archival-rpc.testnet.near.org"),
   explorerUrl: import.meta.env.VITE_EXPLORER_URL ?? "https://testnet.nearblocks.io",
   sourceUrl: import.meta.env.VITE_SOURCE_URL ?? "https://github.com/Modemola/near",
 };

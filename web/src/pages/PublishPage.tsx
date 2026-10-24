@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { GlassVault } from "../components/GlassVault";
 import { ErrorNote, Hash, PageHead, Panel, useAsync } from "../components/ui";
@@ -9,6 +9,9 @@ import { explorerTx, proctor, txHashOf } from "../lib/near";
 import { useToasts } from "../lib/toasts";
 import { FingerprintSeal } from "../components/Seal";
 import { useWallet } from "../lib/wallet";
+import { clearWalletReturn, walletReturn } from "../lib/walletReturn";
+
+const PENDING_PUBLISH = "proctor.pendingPublish";
 
 /** Storage deposit for registering a set; the contract refunds what it doesn't use. */
 const REGISTER_DEPOSIT = (10n ** 23n).toString(); // 0.1 NEAR
@@ -36,6 +39,40 @@ export function PublishPage() {
   const [busy, setBusy] = useState(false);
   const [registered, setRegistered] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  // Back from a redirect wallet: report what happened to the publish.
+  useEffect(() => {
+    const raw = sessionStorage.getItem(PENDING_PUBLISH);
+    if (!raw) return;
+    const pending = JSON.parse(raw) as { set_id: string; title: string };
+    const ret = walletReturn();
+    if (!ret) return;
+    clearWalletReturn();
+    sessionStorage.removeItem(PENDING_PUBLISH);
+    const step = toasts.start(`Publish "${pending.title}"`);
+    if (ret.error) {
+      const cancelled = ret.error === "Cancelled";
+      step(cancelled ? "Cancelled" : "Failed", cancelled ? "Cancelled. Nothing was sent." : friendlyError(ret.error));
+      return;
+    }
+    step("Pending", "Sent. Waiting for your test to appear on NEAR…");
+    let stop = false;
+    (async () => {
+      for (let i = 0; i < 30 && !stop; i++) {
+        if (await proctor.set(pending.set_id).catch(() => null)) {
+          step("Confirmed", <>Published. <Link viewTransition to={`/sets/${pending.set_id}`}>Open your test</Link></>);
+          setRegistered(pending.set_id);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (!stop) step("Failed", "Your test hasn't appeared after a minute. Check your wallet's activity; if the transaction failed, nothing was charged.");
+    })();
+    return () => {
+      stop = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const load = async (name: string, text: string) => {
     setFile(null);
@@ -85,6 +122,8 @@ export function PublishPage() {
     if (!file || !ready) return;
     setBusy(true);
     const step = toasts.start(`Publish "${form.title}"`, "Confirm the transaction in your wallet.");
+    // A redirect wallet leaves the page; this lets the page report back on return.
+    sessionStorage.setItem(PENDING_PUBLISH, JSON.stringify({ set_id: form.set_id, title: form.title }));
     try {
       const priceYocto = BigInt(Math.round(price * 1e6)) * 10n ** 18n;
       const outcome = await call(
@@ -123,7 +162,9 @@ export function PublishPage() {
         </>,
       );
       setRegistered(form.set_id);
+      sessionStorage.removeItem(PENDING_PUBLISH);
     } catch (e) {
+      sessionStorage.removeItem(PENDING_PUBLISH);
       const msg = friendlyError(e);
       step(isCancel(msg) ? "Cancelled" : "Failed", msg);
       if (!isCancel(msg)) setErr(msg);

@@ -5,6 +5,7 @@ import { AccountLink, ErrorNote, Hash, Loading, PageHead, Panel, Stat, StatStrip
 import { friendlyError, isCancel } from "../lib/errors";
 import { explorerTx, formatNear, proctor, txHashOf } from "../lib/near";
 import { useToasts } from "../lib/toasts";
+import { clearWalletReturn, walletReturn } from "../lib/walletReturn";
 import type { ContractConfig, TestSet } from "../lib/types";
 import { useWallet } from "../lib/wallet";
 import { FingerprintSeal } from "../components/Seal";
@@ -130,12 +131,34 @@ function RequestEval({ set, models, config }: { set: TestSet; models: string[]; 
   // After the wallet returns (redirect wallets reload the page), find the new run.
   useEffect(() => {
     const raw = sessionStorage.getItem(PENDING_KEY);
-    if (!raw || !accountId) return;
+    if (!raw) return;
     const pending = JSON.parse(raw) as { setId: string; before: number; accountId: string; model: string };
-    if (pending.setId !== setId || pending.accountId !== accountId) return;
+    if (pending.setId !== setId) return;
+    const ret = walletReturn();
+    if (ret?.error) {
+      // Cancelled or refused in a redirect wallet: nothing was sent.
+      clearWalletReturn();
+      sessionStorage.removeItem(PENDING_KEY);
+      setBusy(false);
+      const cancelled = ret.error === "Cancelled";
+      toasts.start(`Certify ${pending.model}`)(cancelled ? "Cancelled" : "Failed", cancelled ? "Cancelled. Nothing was sent." : friendlyError(ret.error));
+      return;
+    }
+    if (!accountId || pending.accountId !== accountId) return;
     setBusy(true);
     const step = toasts.start(`Certify ${pending.model}`);
-    step("Pending", "Sent. Waiting for the test run to appear on NEAR…");
+    if (ret?.hashes.length) {
+      clearWalletReturn();
+      step(
+        "Pending",
+        <>
+          Sent. Waiting for the test run to appear.{" "}
+          <a href={explorerTx(ret.hashes[0])} target="_blank" rel="noreferrer">
+            See the transaction
+          </a>
+        </>,
+      );
+    } else step("Pending", "Sent. Waiting for the test run to appear on NEAR…");
     let stop = false;
     (async () => {
       for (let i = 0; i < 90 && !stop; i++) {
@@ -247,11 +270,11 @@ function RequestEval({ set, models, config }: { set: TestSet; models: string[]; 
           <dd>{n(BigInt(set.price))}</dd>
         </div>
         <div>
-          <dt>Grading deposit</dt>
+          <dt>Grading and storage deposit</dt>
           <dd>{n(grading)}</dd>
         </div>
         <div>
-          <dt>Storage deposit</dt>
+          <dt>Safety margin</dt>
           <dd>{n(STORAGE_MARGIN)}</dd>
         </div>
         <div className="total">
@@ -260,8 +283,8 @@ function RequestEval({ set, models, config }: { set: TestSet; models: string[]; 
         </div>
       </dl>
       <p className="risk" style={{ marginTop: "0.5rem" }}>
-        You get back whatever the {jobs} grading batches and storage don't use. If grading fails, you get everything
-        back, price included.
+        You get back whatever the {jobs} grading batches and the margin don't use. If grading fails, you get
+        everything back, price included.
       </p>
 
       <div style={{ marginTop: "1.1rem" }}>

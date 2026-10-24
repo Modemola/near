@@ -3,15 +3,24 @@ import { Celebrate } from "../components/Celebrate";
 import { Link, useParams } from "react-router-dom";
 import { AccountLink, ErrorNote, Loading, PageHead, Panel, Stat, StatStrip, StatusBadge, useAsync } from "../components/ui";
 import { friendlyError, isCancel } from "../lib/errors";
-import { explorerTx, formatNear, proctor, txHashOf } from "../lib/near";
+import { explorerTx, formatNear, proctor, rpc, txHashOf } from "../lib/near";
 import { useToasts } from "../lib/toasts";
+import type { ChunkState } from "../lib/types";
 import { useWallet } from "../lib/wallet";
+import { clearWalletReturn, isIdParam, walletReturn } from "../lib/walletReturn";
 
+/** The contract's limits (contract/src/lib.rs). */
 const MAX_ATTEMPTS = 3;
+const STALE_AFTER_BLOCKS = 500;
+const PENDING_DISPATCH = "proctor.pendingDispatch";
 
 export function EvalPage() {
   const { evalId = "" } = useParams();
-  const { data: ev, error, loading } = useAsync(() => proctor.eval(evalId), [evalId], 4000);
+  const validId = isIdParam(evalId);
+  const { data: ev, error, loading } = useAsync(() => (validId ? proctor.eval(evalId) : Promise.resolve(null)), [evalId], 4000);
+  // The chain's height, to spot batches whose result never came back.
+  const head = useAsync(() => rpc<{ header: { height: number } }>("block", { finality: "final" }).then((b) => b.header.height), [], 15000);
+  const [dispatching, setDispatching] = useState(false);
   // Celebrate only when a run finishes while you watch it.
   const lastStatus = useRef<string | null>(null);
   const [justCertified, setJustCertified] = useState(false);
@@ -23,6 +32,30 @@ export function EvalPage() {
   const { accountId, signIn, call } = useWallet();
   const toasts = useToasts();
 
+  // Back from a redirect wallet after "Start the next batches".
+  useEffect(() => {
+    if (sessionStorage.getItem(PENDING_DISPATCH) !== evalId) return;
+    const ret = walletReturn();
+    sessionStorage.removeItem(PENDING_DISPATCH);
+    if (!ret) return;
+    clearWalletReturn();
+    const step = toasts.start("Start the next batches");
+    if (ret.error) step(ret.error === "Cancelled" ? "Cancelled" : "Failed", ret.error === "Cancelled" ? "Cancelled. Nothing was sent." : friendlyError(ret.error));
+    else
+      step(
+        "Confirmed",
+        <>
+          Sent. The batches start as it lands.{" "}
+          {ret.hashes[0] && (
+            <a href={explorerTx(ret.hashes[0])} target="_blank" rel="noreferrer">
+              See the transaction
+            </a>
+          )}
+        </>,
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evalId]);
+
   if (loading && !ev) return <Loading what="Loading the test run" />;
   if (error && !ev) return <ErrorNote error={error} />;
   if (!ev)
@@ -32,16 +65,27 @@ export function EvalPage() {
       </PageHead>
     );
 
+  // In flight for longer than the contract allows: its result was lost, and
+  // the next dispatch retries it.
+  const isStale = (c: ChunkState) => c.state === "InFlight" && head.data !== undefined && head.data - Number(c.since) >= STALE_AFTER_BLOCKS;
   const count = (s: string) => ev.chunks.filter((c) => c.state === s).length;
-  const waiting = ev.chunks.filter((c) => c.state === "Pending" || (c.state === "Failed" && c.attempts < MAX_ATTEMPTS)).length;
+  const stale = ev.chunks.filter(isStale).length;
+  const waiting =
+    ev.chunks.filter((c) => c.state === "Pending" || (c.state === "Failed" && c.attempts < MAX_ATTEMPTS)).length + stale;
   const done = count("Done");
-  const running = count("InFlight");
+  const running = count("InFlight") - stale;
   const failures = ev.chunks.flatMap((c, i) => (c.state === "Failed" ? [{ i, error: c.error, attempts: c.attempts }] : []));
 
   const dispatch = () => {
+    setDispatching(true);
+    sessionStorage.setItem(PENDING_DISPATCH, String(ev.id));
     const step = toasts.start("Start the next batches", "Confirm the transaction in your wallet.");
     // Don't await execution: the started batches' callbacks stay pending until graded.
     call("dispatch", { eval_id: String(ev.id) })
+      .finally(() => {
+        setDispatching(false);
+        sessionStorage.removeItem(PENDING_DISPATCH);
+      })
       .then((outcome) => {
         const hash = txHashOf(outcome);
         step(
@@ -103,9 +147,9 @@ export function EvalPage() {
                   {ev.chunks.slice(run * ev.chunks_per_run, (run + 1) * ev.chunks_per_run).map((c, i) => (
                     <span
                       key={`${i}-${c.state}`}
-                      className={`batch ${c.state}`}
+                      className={`batch ${isStale(c) ? "Failed" : c.state}`}
                       style={{ "--d": `${i * 0.06}s` } as CSSProperties}
-                      title={`Batch ${i + 1}: ${STATE_WORD[c.state]}${"attempts" in c && c.attempts ? `, attempt ${c.attempts}` : ""}`}
+                      title={`Batch ${i + 1}: ${isStale(c) ? "no result came back, will retry" : STATE_WORD[c.state]}${"attempts" in c && c.attempts ? `, attempt ${c.attempts}` : ""}`}
                     />
                   ))}
                 </div>
@@ -172,8 +216,8 @@ export function EvalPage() {
                   the batches are paid from this run's deposit.
                 </p>
                 {accountId ? (
-                  <button className="btn block" onClick={dispatch}>
-                    Start the next batches
+                  <button className="btn block" onClick={dispatch} disabled={dispatching}>
+                    {dispatching ? "Waiting for your wallet…" : stale ? "Retry and start the next batches" : "Start the next batches"}
                   </button>
                 ) : (
                   <button className="btn block secondary" onClick={signIn}>
