@@ -23,7 +23,31 @@ interface WalletState {
 
 const WalletContext = createContext<WalletState | null>(null);
 
+/** End-to-end tests against a local sandbox sign with a throwaway key (development builds only). */
+const DEV_ACCOUNT = import.meta.env.DEV ? (import.meta.env.VITE_DEV_ACCOUNT_ID as string | undefined) : undefined;
+const DEV_KEY = import.meta.env.DEV ? (import.meta.env.VITE_DEV_PRIVATE_KEY as string | undefined) : undefined;
+export const devSignerActive = !!(DEV_ACCOUNT && DEV_KEY);
+
 export function WalletProvider({ children }: { children: ReactNode }) {
+  if (devSignerActive) return <DevWalletProvider>{children}</DevWalletProvider>;
+  return <SelectorWalletProvider>{children}</SelectorWalletProvider>;
+}
+
+function DevWalletProvider({ children }: { children: ReactNode }) {
+  const value: WalletState = {
+    accountId: DEV_ACCOUNT!,
+    ready: true,
+    signIn: () => {},
+    signOut: async () => {},
+    call: async (method, args, depositYocto = "0", tgas = 300) => {
+      const { devSignAndSend } = await import("./devSigner");
+      return devSignAndSend(DEV_ACCOUNT!, DEV_KEY!, config.contractId, method, args, BigInt(tgas) * 10n ** 12n, BigInt(depositYocto));
+    },
+  };
+  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
+}
+
+function SelectorWalletProvider({ children }: { children: ReactNode }) {
   const [selector, setSelector] = useState<WalletSelector | null>(null);
   const [modal, setModal] = useState<WalletSelectorModal | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);

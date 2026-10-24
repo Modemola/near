@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { config, isConfigured } from "../lib/config";
 import { proctor } from "../lib/near";
 import { scrollToTop, useSmoothScroll } from "../lib/smooth";
-import { useWallet } from "../lib/wallet";
+import { devSignerActive, useWallet } from "../lib/wallet";
 import { Cursor } from "./Cursor";
 import { Aurora, useAmbientMotion } from "./motion";
 import { useAsync } from "./ui";
@@ -81,6 +81,12 @@ export function Layout() {
               <strong>You are looking at a demo.</strong> Its grading is simulated (jobs go to{" "}
               <code>{cfg.data?.outlayer}</code>, not secure hardware), so its models and scores only show how Proctor
               works. They are not real results.
+            </div>
+          )}
+          {devSignerActive && (
+            <div className="note" role="note">
+              <strong>Test signer active.</strong> This development build signs as <code>{accountId}</code> with a local
+              test key. Production builds never include it.
             </div>
           )}
           {!isConfigured && (

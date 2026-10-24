@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Leaderboard } from "../components/Leaderboard";
 import { AccountLink, ErrorNote, Hash, Loading, PageHead, Panel, Stat, StatStrip, useAsync } from "../components/ui";
 import { friendlyError, isCancel } from "../lib/errors";
-import { explorerTx, formatNear, proctor, txHashOf } from "../lib/near";
+import { explorerTx, formatNear, proctor, txHashOf, waitForCall } from "../lib/near";
 import { useToasts } from "../lib/toasts";
 import { clearWalletReturn, walletReturn } from "../lib/walletReturn";
 import type { ContractConfig, TestSet } from "../lib/types";
@@ -227,8 +227,21 @@ function RequestEval({ set, models, config }: { set: TestSet; models: string[]; 
     // Don't wait for execution: the run's callbacks stay pending until the
     // grader answers. Look for the new run on-chain instead.
     call("request_eval", { set_id: setId, model_id: model }, deposit.toString())
-      .then((outcome) => {
+      .then(async (outcome) => {
         const hash = txHashOf(outcome);
+        if (hash) {
+          // Report a refusal at once instead of waiting for a run that won't come.
+          const failure = await waitForCall(hash, accountId, 60000);
+          if (failure) {
+            sessionStorage.removeItem(PENDING_KEY);
+            const msg = friendlyError(failure);
+            step("Failed", msg);
+            setErr(msg);
+            setBusy(false);
+            setPendingVersion((v) => v + 1);
+            return;
+          }
+        }
         if (hash)
           step(
             "Pending",

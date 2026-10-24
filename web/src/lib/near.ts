@@ -103,3 +103,38 @@ export function txHashOf(outcome: unknown): string | null {
   const o = outcome as { transaction?: { hash?: string }; transaction_outcome?: { id?: string } } | null;
   return o?.transaction?.hash ?? o?.transaction_outcome?.id ?? null;
 }
+
+/**
+ * How the transaction's first receipt (the call to our contract) ended:
+ * `null` if it succeeded, the failure message if it failed, `undefined` if it
+ * hasn't run yet. Doesn't wait for later receipts, so it works for calls whose
+ * callbacks stay pending (request_eval, dispatch).
+ */
+export async function callOutcome(txHash: string, signer: string): Promise<string | null | undefined> {
+  let tx: TxOutcome & { transaction_outcome?: { outcome: { receipt_ids: string[] } } };
+  try {
+    tx = await rpc("EXPERIMENTAL_tx_status", { tx_hash: txHash, sender_account_id: signer, wait_until: "NONE" });
+  } catch {
+    return undefined;
+  }
+  const first = tx.transaction_outcome?.outcome.receipt_ids[0];
+  const receipt = tx.receipts_outcome.find((r) => r.id === first);
+  if (!receipt) return undefined;
+  const status = receipt.outcome.status as { Failure?: unknown; SuccessValue?: unknown; SuccessReceiptId?: unknown; Unknown?: unknown };
+  if (status.Failure !== undefined) {
+    const f = JSON.stringify(status.Failure);
+    const m = /ExecutionError\\?":\\?"([^"\\]+)/.exec(f);
+    return m ? m[1] : f;
+  }
+  return status.SuccessValue !== undefined || status.SuccessReceiptId !== undefined ? null : undefined;
+}
+
+/** Poll `callOutcome` until the call has run, for up to `ms`. */
+export async function waitForCall(txHash: string, signer: string, ms = 30000): Promise<string | null | undefined> {
+  for (const end = Date.now() + ms; Date.now() < end; ) {
+    const r = await callOutcome(txHash, signer);
+    if (r !== undefined) return r;
+    await new Promise((res) => setTimeout(res, 1500));
+  }
+  return undefined;
+}

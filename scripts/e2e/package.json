@@ -1,0 +1,11 @@
+{
+  "name": "proctor-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests: the web app against a local NEAR sandbox with the real contract.",
+  "dependencies": {
+    "@noble/ed25519": "2.1.0",
+    "@noble/hashes": "1.5.0",
+    "near-api-js": "7.4.0"
+  }
+}

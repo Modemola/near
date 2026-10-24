@@ -5,7 +5,7 @@ import { ErrorNote, Hash, PageHead, Panel, useAsync } from "../components/ui";
 import { parseTestSet, setCommitment, type ParsedSet } from "../lib/commitment";
 import { config } from "../lib/config";
 import { friendlyError, isCancel } from "../lib/errors";
-import { explorerTx, proctor, txHashOf } from "../lib/near";
+import { explorerTx, proctor, txHashOf, waitForCall } from "../lib/near";
 import { useToasts } from "../lib/toasts";
 import { FingerprintSeal } from "../components/Seal";
 import { useWallet } from "../lib/wallet";
@@ -89,12 +89,13 @@ export function PublishPage() {
     try {
       const res = await fetch("/examples/scam-sample.json");
       await load("scam-sample.json", await res.text());
-      setForm({
-        ...EMPTY,
-        set_id: "my-scam-test",
-        title: "Everyday scam messages",
-        description: "Texts, emails and chat messages a household might receive, about half of them scams.",
-      });
+      // Fill only what's still empty: never overwrite what the user typed.
+      setForm((f) => ({
+        ...f,
+        set_id: f.set_id || "my-scam-test",
+        title: f.title || "Everyday scam messages",
+        description: f.description || "Texts, emails and chat messages a household might receive, about half of them scams.",
+      }));
     } catch (e) {
       setFileErr(friendlyError(e));
     }
@@ -119,7 +120,7 @@ export function PublishPage() {
 
   const register = async () => {
     setErr(null);
-    if (!file || !ready) return;
+    if (!file || !ready || !accountId) return;
     setBusy(true);
     const step = toasts.start(`Publish "${form.title}"`, "Confirm the transaction in your wallet.");
     // A redirect wallet leaves the page; this lets the page report back on return.
@@ -147,6 +148,21 @@ export function PublishPage() {
         50,
       );
       const hash = txHashOf(outcome);
+      // The wallet only says the transaction was sent. Check what the contract
+      // did: refuse to say "Published" unless the test is on-chain as ours.
+      if (hash) {
+        const failure = await waitForCall(hash, accountId);
+        if (failure) throw new Error(failure);
+      }
+      let mine = false;
+      for (let i = 0; i < 20 && !mine; i++) {
+        const onChain = await proctor.set(form.set_id).catch(() => null);
+        if (onChain) {
+          if (onChain.author !== accountId || onChain.commitment !== file.commitment) throw new Error("set id taken");
+          mine = true;
+        } else await new Promise((r) => setTimeout(r, 1500));
+      }
+      if (!mine) throw new Error("Your test hasn't appeared on NEAR yet. Check your wallet's activity before trying again.");
       step(
         "Confirmed",
         <>
