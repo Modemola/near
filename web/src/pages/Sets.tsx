@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ErrorNote, Loading, useAsync } from "../components/ui";
+import { Loading, PageHead, Panel, Unavailable, useAsync } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { formatNear, proctor } from "../lib/near";
 
@@ -7,25 +7,52 @@ export function Sets() {
   const { data, error, loading } = useAsync(() => (isConfigured ? proctor.sets() : Promise.resolve([])), []);
   return (
     <>
-      <h1>Test sets</h1>
-      <p className="lede">Private sets models are certified on. Their contents are never published; their fingerprints are.</p>
-      {loading && <Loading />}
-      {error && <ErrorNote error={error} />}
+      <PageHead eyebrow="Tests" title={<>Sealed <em>tests</em></>}>
+        Each test is a set of real-looking messages, some scams and some not. Nobody can read them, not even us; only
+        their fingerprints are public.
+      </PageHead>
+      {loading && <Loading what="Loading tests" />}
+      {error && <Unavailable what="The list of tests" error={error} />}
       <div className="grid cols-2">
         {data?.map((s) => (
-          <div className="card" key={s.set_id}>
-            <h3 style={{ marginTop: 0 }}>
-              <Link to={`/sets/${s.set_id}`}>{s.title}</Link>{" "}
-              {!s.active && <span className="badge muted">retired</span>}
-            </h3>
-            <p className="small muted">{s.description}</p>
-            <p className="small">
-              {s.item_count} items · {formatNear(s.price)} NEAR per eval · author gets {s.author_bps / 100}%
+          <Panel
+            key={s.set_id}
+            eyebrow={s.active ? "Open for certification" : "Retired"}
+            title={<Link to={`/sets/${s.set_id}`}>{s.title}</Link>}
+            serial={s.set_id}
+          >
+            <p className="small" style={{ color: "var(--ink-secondary)" }}>
+              {s.description}
             </p>
-          </div>
+            <dl className="rows">
+              <div>
+                <dt>Messages</dt>
+                <dd>{s.item_count}</dd>
+              </div>
+              <div>
+                <dt>Price per certification</dt>
+                <dd>{formatNear(s.price)} NEAR</dd>
+              </div>
+              <div>
+                <dt>Author's share</dt>
+                <dd>{s.author_bps / 100}%</dd>
+              </div>
+            </dl>
+            <div style={{ marginTop: "1rem" }}>
+              <Link className="btn secondary small" to={`/sets/${s.set_id}`}>
+                See results
+              </Link>
+            </div>
+          </Panel>
         ))}
       </div>
-      {data?.length === 0 && <p className="muted">No sets yet. <Link to="/publish">Publish one</Link>.</p>}
+      {data?.length === 0 && (
+        <div className="panel quiet">
+          <p className="state" style={{ padding: 0 }}>
+            No tests have been published yet. <Link to="/publish">Publish the first one</Link>.
+          </p>
+        </div>
+      )}
     </>
   );
 }

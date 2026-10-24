@@ -4,7 +4,20 @@ import type { Certificate, ContractConfig, Eval, Model, TestSet } from "./types"
 
 let nextId = 1;
 
+/** Public RPC nodes rate-limit bursts; retry network failures and 429s twice with backoff. */
 export async function rpc<T>(method: string, params: unknown, url = config.rpcUrl): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await rpcOnce<T>(method, params, url);
+    } catch (e) {
+      const retryable = e instanceof TypeError || (e instanceof Error && /HTTP (429|50\d)/.test(e.message));
+      if (!retryable || attempt >= 2) throw e;
+      await new Promise((r) => setTimeout(r, 600 * 2 ** attempt));
+    }
+  }
+}
+
+async function rpcOnce<T>(method: string, params: unknown, url: string): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -80,4 +93,13 @@ export function formatNear(yocto: string, digits = 3): string {
 
 export function pct(bps: number): string {
   return `${(bps / 100).toFixed(1)}%`;
+}
+
+/** Explorer page for a transaction. */
+export const explorerTx = (hash: string) => `${config.explorerUrl}/txns/${hash}`;
+
+/** The transaction hash in whatever a wallet returns after submitting, if it says. */
+export function txHashOf(outcome: unknown): string | null {
+  const o = outcome as { transaction?: { hash?: string }; transaction_outcome?: { id?: string } } | null;
+  return o?.transaction?.hash ?? o?.transaction_outcome?.id ?? null;
 }

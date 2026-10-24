@@ -20,18 +20,22 @@ export function Layout() {
             Proctor
           </NavLink>
           <nav className="main" aria-label="Main">
-            <NavLink to="/" end>Leaderboard</NavLink>
-            <NavLink to="/sets">Test sets</NavLink>
-            <NavLink to="/publish">Publish a set</NavLink>
+            <NavLink to="/" end>
+              Results
+            </NavLink>
+            <NavLink to="/sets">Tests</NavLink>
             <NavLink to="/how">How it works</NavLink>
+            <NavLink to="/publish">Publish a test</NavLink>
           </nav>
-          <span className="badge muted" title="NEAR network">{config.networkId}</span>
+          <span className="net" title="NEAR network">
+            {config.networkId}
+          </span>
           {accountId ? (
-            <button className="btn secondary" onClick={() => signOut()} title="Sign out">
-              {accountId}
+            <button className="btn secondary small" onClick={() => signOut()} title="Disconnect wallet">
+              {accountId.length > 22 ? `${accountId.slice(0, 20)}…` : accountId}
             </button>
           ) : (
-            <button className="btn" onClick={signIn} disabled={!ready}>
+            <button className="btn secondary small" onClick={signIn} disabled={!ready}>
               Connect wallet
             </button>
           )}
@@ -40,16 +44,16 @@ export function Layout() {
       <main>
         <div className="wrap">
           {simulated && (
-            <div className="notice bad" role="note">
-              <strong>Demo deployment.</strong> This contract sends grading jobs to <code>{cfg.data?.outlayer}</code>, a
-              simulated OutLayer, not a real TEE. Its models and scores are simulated to show the flow; they are not real
-              certificates.
+            <div className="note demo" role="note">
+              <strong>You are looking at a demo.</strong> Its grading is simulated (jobs go to{" "}
+              <code>{cfg.data?.outlayer}</code>, not secure hardware), so its models and scores only show how Proctor
+              works. They are not real results.
             </div>
           )}
           {!isConfigured && (
-            <div className="notice bad">
-              No contract configured. Set <code>VITE_CONTRACT_ID</code> in <code>web/.env.local</code> (see{" "}
-              <code>.env.example</code>).
+            <div className="note">
+              <strong>Proctor isn't connected to a contract yet.</strong> Set <code>VITE_CONTRACT_ID</code> in{" "}
+              <code>web/.env.local</code> (see <code>.env.example</code>).
             </div>
           )}
           <Outlet />
@@ -57,9 +61,11 @@ export function Layout() {
       </main>
       <footer className="site">
         <div className="wrap">
-          Proctor: certified scores for AI models on private test sets. Contract{" "}
-          <code>{config.contractId || "not set"}</code> on NEAR {config.networkId}.{" "}
-          <a href={config.sourceUrl}>Source</a>
+          <span>Proctor. Independent results for AI scam filters, checked on NEAR.</span>
+          <span>
+            Contract <code>{config.contractId || "not set"}</code> on {config.networkId} ·{" "}
+            <a href={config.sourceUrl}>Source code</a>
+          </span>
         </div>
       </footer>
     </>

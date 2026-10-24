@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { Leaderboard } from "../components/Leaderboard";
-import { ErrorNote, Loading, useAsync } from "../components/ui";
+import { Leaderboard, latestPerModel, medianRun, plainCounts } from "../components/Leaderboard";
+import { AnswerSheet, Panel, Stat, StatStrip, Unavailable, useAsync, Words } from "../components/ui";
 import { isConfigured } from "../lib/config";
-import { proctor } from "../lib/near";
+import { pct, proctor } from "../lib/near";
+import type { Certificate } from "../lib/types";
 
 export function Home() {
   const featured = import.meta.env.VITE_FEATURED_SET as string | undefined;
@@ -12,55 +13,192 @@ export function Home() {
     const set = sets.find((s) => s.set_id === featured) ?? sets[0];
     return set ? { set, certs: await proctor.certificates(set.set_id) } : null;
   }, []);
+  const rows = data ? latestPerModel(data.certs) : [];
+  const top = rows[0];
+  const bestCatch = rows.length ? Math.max(...rows.map((c) => c.detection_bps)) : null;
+  const fewestFlags = rows.length ? Math.min(...rows.map((c) => c.false_alarm_bps)) : null;
+  const dash = loading ? "…" : "None yet";
 
   return (
     <>
-      <h1>How good is your AI scam filter, really?</h1>
-      <p className="lede">
-        Every vendor grades its own scam detection. Proctor certifies AI models on scam messages they have never
-        seen: the test set stays sealed inside a TEE, every answer is signed by the model's TEE, and the score is
-        checked and recorded on NEAR.
-      </p>
+      <section className="hero" style={{ marginTop: 0 }}>
+        <div>
+          <p className="eyebrow">Independent results for AI scam filters</p>
+          <h1>
+            <Words text="Which AI catches scams without blocking your real messages?" accent={["without"]} />
+          </h1>
+          <p className="lede">
+            Proctor tests AI models on scam messages they have never seen, under exam conditions nobody can cheat,
+            and publishes results anyone can check.
+          </p>
+          <div className="actions">
+            <a className="btn" href="#results">
+              See the results
+            </a>
+            <Link className="btn secondary" to="/how">
+              How it stays fair
+            </Link>
+          </div>
+        </div>
+        <HeroResult top={top} loading={loading} error={error} setTitle={data?.set.title} />
+      </section>
 
-      {loading && <Loading what="Loading certificates" />}
-      {error && <ErrorNote error={error} />}
-      {data && (
-        <>
+      <section>
+        <StatStrip>
+          <Stat label="Models certified" value={loading ? "…" : rows.length} sub="on the featured test" />
+          <Stat label="Messages in the test" value={data ? data.set.item_count : dash} sub="sealed, never shown to anyone" />
+          <Stat hero label="Most scams caught" value={bestCatch === null ? dash : pct(bestCatch)} sub="best model on this test" />
+          <Stat
+            label="Fewest false alarms"
+            value={fewestFlags === null ? dash : pct(fewestFlags)}
+            sub="real messages wrongly flagged"
+          />
+        </StatStrip>
+      </section>
+
+      <section id="results">
+        <div className="section-head">
+          <p className="eyebrow">Results</p>
+          <h2>{data ? data.set.title : "Latest results"}</h2>
+          <p>
+            {data
+              ? `${data.set.description} Ranked by overall score. Each model was tested several times, because AI answers vary from run to run.`
+              : "Ranked by overall score on the featured test."}
+          </p>
+        </div>
+        {loading && <p className="state" role="status">Loading results…</p>}
+        {error && <Unavailable what="The results list" error={error} />}
+        {data && <Leaderboard certs={data.certs} setTitle={data.set.title} />}
+        {data === null && isConfigured && (
+          <div className="panel quiet">
+            <p className="state" style={{ padding: 0 }}>
+              No tests have been published yet. <Link to="/publish">Publish the first one</Link>.
+            </p>
+          </div>
+        )}
+        {data && (
+          <p className="small" style={{ marginTop: "0.9rem" }}>
+            <Link to={`/sets/${data.set.set_id}`}>About this test, and how to get a model certified on it</Link>
+          </p>
+        )}
+      </section>
+
+      <section>
+        <div className="section-head">
+          <p className="eyebrow">Why you can trust a result</p>
           <h2>
-            <Link to={`/sets/${data.set.set_id}`}>{data.set.title}</Link>
+            An exam with a <em>proctor</em> in the room
           </h2>
-          <p className="muted small">
-            {data.set.item_count} messages in the sealed set. {data.set.description}
+          <p>
+            Most scam filters are graded by the companies that sell them. Proctor runs the exam instead, and nobody,
+            including us, can peek at the questions or change the answers.
           </p>
-          <Leaderboard certs={data.certs} />
-        </>
-      )}
-      {data === null && isConfigured && <p className="muted">No test sets registered yet.</p>}
+        </div>
+        <div className="points">
+          <div>
+            <span className="n">i.</span>
+            <h3>Nobody sees the test</h3>
+            <p>
+              The messages are sealed inside secure hardware. Model makers can't study them in advance, so a good
+              score means the model really spots scams.
+            </p>
+          </div>
+          <div>
+            <span className="n">ii.</span>
+            <h3>Every answer is signed</h3>
+            <p>
+              Each model runs in secure hardware that signs every answer it gives. Answers can't be swapped or
+              edited afterwards.
+            </p>
+          </div>
+          <div>
+            <span className="n">iii.</span>
+            <h3>Anyone can check</h3>
+            <p>
+              Results are recorded on the NEAR blockchain. Every result page has a button that re-checks every
+              signature in your own browser.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <h2>Why you can trust a score</h2>
-      <div className="grid cols-3">
-        <div className="card">
-          <h3>Nobody sees the test set</h3>
-          <p className="small">
-            The set is encrypted in the author's browser to one audited grader build. Only that build, running in an
-            Intel TDX enclave on OutLayer, can decrypt it. Not us, not the model vendor.
+      <section>
+        <Panel eyebrow="Read results fairly" title="What a result does and doesn't tell you" className="quiet">
+          <ul className="small" style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--ink-secondary)" }}>
+            <li>A result speaks for one test, one model version and one point in time. It is not a promise about every scam.</li>
+            <li>Scores vary between runs, so each result shows the range across runs as well as the average.</li>
+            <li>Only models running in secure hardware can be tested, because the test has to stay private.</li>
+            <li>Anyone can publish a test, such as a bank's fraud team. Each test page says who wrote it.</li>
+          </ul>
+        </Panel>
+      </section>
+
+      <section>
+        <div className="panel closing">
+          <p className="eyebrow">Get involved</p>
+          <h2>
+            Have scams your filter <em>must</em> catch?
+          </h2>
+          <p>
+            Publish them as a sealed test. Models get graded on them without anyone seeing them, and you earn a share
+            of every certification.
           </p>
+          <div className="actions">
+            <Link className="btn" to="/publish">
+              Publish a test
+            </Link>
+            <Link className="btn secondary" to="/sets">
+              Certify a model
+            </Link>
+          </div>
         </div>
-        <div className="card">
-          <h3>Every answer is signed</h3>
-          <p className="small">
-            Models run in NEAR AI Cloud GPU TEEs and sign each response over the exact request and response bytes.
-            The contract checks every signature on-chain before counting it.
-          </p>
-        </div>
-        <div className="card">
-          <h3>You can check it yourself</h3>
-          <p className="small">
-            Each certificate page re-verifies every signed answer in your browser from NEAR RPC data.{" "}
-            <Link to="/how">How it works</Link>.
-          </p>
-        </div>
-      </div>
+      </section>
     </>
+  );
+}
+
+function HeroResult({
+  top,
+  loading,
+  error,
+  setTitle,
+}: {
+  top?: Certificate;
+  loading: boolean;
+  error?: string;
+  setTitle?: string;
+}) {
+  if (loading)
+    return (
+      <Panel eyebrow="Top result" title="…" serial="Loading">
+        <p className="state" role="status">Loading the latest result…</p>
+      </Panel>
+    );
+  if (error) return <Unavailable what="The latest result" error={error} />;
+  if (!top)
+    return (
+      <Panel eyebrow="Top result" title="No results yet">
+        <p className="muted">When the first model finishes a test, its answer sheet appears here.</p>
+      </Panel>
+    );
+  const { index } = medianRun(top);
+  const n = plainCounts(top);
+  return (
+    <Panel
+      className="hero-card"
+      eyebrow="Top result"
+      title={top.model_id}
+      sub={setTitle ? `on ${setTitle}` : undefined}
+      serial={`No. ${top.eval_id}`}
+    >
+      <AnswerSheet run={top.runs[index]} stamp={pct(top.accuracy_bps)} stampLabel="Average" />
+      <p className="say">
+        Caught <em>{n.caught} of {n.scams}</em> scams and wrongly flagged {n.flagged} of {n.real} real messages.
+      </p>
+      <p className="small muted" style={{ margin: "0.5rem 0 0" }}>
+        Answer sheet from its typical run (run {index + 1} of {top.runs.length}).{" "}
+        <Link to={`/certificates/${top.eval_id}`}>See the full result</Link>
+      </p>
+    </Panel>
   );
 }

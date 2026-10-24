@@ -1,0 +1,208 @@
+{
+  "name": "Proctor public scam sample",
+  "version": 1,
+  "public": true,
+  "note": "Public items written for Proctor. Never part of any private test set. All names, numbers, brands and domains are fictional (UK +44 7700 900xxx test range, example.* domains).",
+  "items": [
+    {
+      "id": "pub-01",
+      "channel": "sms",
+      "from": "+44 7700 900417",
+      "text": "Hi Mum it's me, dropped my phone in the sink so this is my new number for now, can you save it? Bit awkward but I need to pay my rent today and my banking app won't let me log in on the new phone. Could you send £640 to my landlord's account? Sort code 04-00-75, acc 21873364, name D. Okafor. I'll pay you back Friday x",
+      "label": "SCAM",
+      "category": "family_emergency",
+      "difficulty": "hard",
+      "rationale": "Unknown number claiming to be family, urgency, money to a third party's account."
+    },
+    {
+      "id": "pub-02",
+      "channel": "voice_transcript",
+      "from": "Unknown caller",
+      "text": "Grandma? It's Josh. Please don't be mad. I was in a car accident and the police say I have to pay bail before they let me go. My lawyer Mr Hale is going to call you in a minute. Please don't tell Mum and Dad, I'll explain everything later. He said cash or gift cards is the fastest way.",
+      "label": "SCAM",
+      "category": "family_emergency",
+      "difficulty": "medium",
+      "rationale": "Grandparent scam: secrecy, urgency, bail, gift cards."
+    },
+    {
+      "id": "pub-03",
+      "channel": "sms",
+      "from": "NorthfieldBk",
+      "text": "Northfield Bank: A payment of £1,249.00 to EVR-TRADE LTD is pending. If this was NOT you, call our fraud team immediately on 0808 157 0192 to cancel it.",
+      "label": "SCAM",
+      "category": "bank_impersonation",
+      "difficulty": "hard",
+      "rationale": "Fake fraud alert pushing the reader to call a number given in the message."
+    },
+    {
+      "id": "pub-04",
+      "channel": "voice_transcript",
+      "from": "+44 7700 900905",
+      "text": "Hello, this is Daniel from the security team at Northfield Bank. We've blocked a suspicious transfer on your account. To confirm you're the account holder I've just sent you a six-digit code. Can you read it back to me so I can cancel the transfer?",
+      "label": "SCAM",
+      "category": "bank_impersonation",
+      "difficulty": "medium",
+      "rationale": "Asks the reader to read out a one-time code."
+    },
+    {
+      "id": "pub-05",
+      "channel": "sms",
+      "from": "ParcelSwift",
+      "text": "ParcelSwift: Your parcel could not be delivered due to an unpaid customs fee of £1.99. Pay within 24h or it will be returned to sender: https://parcelswift-redelivery.example.com/pay",
+      "label": "SCAM",
+      "category": "delivery_fee",
+      "difficulty": "easy",
+      "rationale": "Small fee, deadline, payment link on a look-alike domain."
+    },
+    {
+      "id": "pub-06",
+      "channel": "email",
+      "from": "Accounts - Brightline Print <accounts@brightline-print.example.net>",
+      "text": "Hi Sarah, please find attached invoice BLP-2291 for the October flyers (£3,420.00). Just a heads-up that we've moved banks after our audit, so please use the new details below for this and all future payments: sort code 30-96-26, account 48810073. Our old account will be closed at the end of the month. Thanks, Mark",
+      "label": "SCAM",
+      "category": "invoice_payee_change",
+      "difficulty": "hard",
+      "rationale": "Payee-change request on a look-alike domain."
+    },
+    {
+      "id": "pub-07",
+      "channel": "social_dm",
+      "from": "lina.w.travels (message request)",
+      "text": "Hey, sorry I think I messaged the wrong person 😅 I was trying to reach my cousin about the golf trip. You seem nice though! What do you do? I mostly work in tea export but honestly most of my income these days comes from a crypto arbitrage platform my uncle introduced me to, very steady.",
+      "label": "SCAM",
+      "category": "investment_pig_butchering",
+      "difficulty": "hard",
+      "rationale": "Wrong-number opener steered towards a crypto investment platform."
+    },
+    {
+      "id": "pub-08",
+      "channel": "whatsapp",
+      "from": "Priya - TalentReach (+44 7700 900631)",
+      "text": "Hello! I'm Priya from TalentReach Recruitment. We have a flexible remote role: rate products online 30-60 min a day, £250-£400 per day, no experience needed. To activate your work account you just need to complete a starter task (minimum deposit 50 USDT, refunded with your first payout). Interested?",
+      "label": "SCAM",
+      "category": "job_task",
+      "difficulty": "easy",
+      "rationale": "Unrealistic pay and a deposit required to start work."
+    },
+    {
+      "id": "pub-09",
+      "channel": "email",
+      "from": "Device Security Center <alerts@secure-device-check.example.org>",
+      "text": "We detected 3 viruses on your device. Your files and banking data are at risk. Call certified support now on 0800 046 2213 or install our remote assistant tool to fix this immediately.",
+      "label": "SCAM",
+      "category": "tech_support",
+      "difficulty": "easy",
+      "rationale": "Unsolicited virus warning pushing a call or remote-access install."
+    },
+    {
+      "id": "pub-10",
+      "channel": "sms",
+      "from": "TAX-OFFICE",
+      "text": "TAX OFFICE: You are owed a tax refund of £326.18 for the 2025/26 tax year. Claim before 31 Oct to avoid it expiring: https://tax-refund-claims.example.com",
+      "label": "SCAM",
+      "category": "government_tax",
+      "difficulty": "medium",
+      "rationale": "Refund offered by text with a deadline and a non-official link."
+    },
+    {
+      "id": "pub-11",
+      "channel": "social_dm",
+      "from": "Buyer: Kev_M (marketplace)",
+      "text": "Hi, I'll take the bike for your asking price of £180. I've just sent £430 by mistake through the marketplace's secure payment, the extra was meant for my courier who'll collect it. Could you transfer the £250 difference to the courier so he can come today? Screenshot of the payment attached.",
+      "label": "SCAM",
+      "category": "marketplace_overpayment",
+      "difficulty": "medium",
+      "rationale": "Overpayment and a request to send back the difference."
+    },
+    {
+      "id": "pub-12",
+      "channel": "sms",
+      "from": "+44 7700 900288",
+      "text": "Hi Dad, it's Tomi, new number, my old phone finally died. Save this one! Are we still on for Sunday lunch? I'll bring dessert.",
+      "label": "LEGIT",
+      "category": "family_emergency",
+      "difficulty": "hard",
+      "rationale": "New-number message that asks for nothing."
+    },
+    {
+      "id": "pub-13",
+      "channel": "sms",
+      "from": "NorthfieldBk",
+      "text": "Northfield Bank: Did you just try to pay £86.40 to SHOPLINE ONLINE? Reply YES or NO. We will never ask you for a code or to move money. If unsure, call the number on the back of your card.",
+      "label": "LEGIT",
+      "category": "bank_impersonation",
+      "difficulty": "hard",
+      "rationale": "Genuine fraud check: no link, no code request, points to the number on the card."
+    },
+    {
+      "id": "pub-14",
+      "channel": "sms",
+      "from": "ParcelSwift",
+      "text": "ParcelSwift: Your parcel from Greenway Books is out for delivery today between 13:00 and 15:00. Track it in the ParcelSwift app. No payment is needed.",
+      "label": "LEGIT",
+      "category": "delivery_fee",
+      "difficulty": "medium",
+      "rationale": "Delivery update with no link and no payment."
+    },
+    {
+      "id": "pub-15",
+      "channel": "email",
+      "from": "Mark Ellis <mark@brightlineprint.example.com>",
+      "text": "Hi Sarah, invoice BLP-2302 for the November posters is attached (£1,180.00), payable within 30 days to our usual account ending 7731. Let me know if the quantities look off. Cheers, Mark",
+      "label": "LEGIT",
+      "category": "invoice_payee_change",
+      "difficulty": "hard",
+      "rationale": "Normal invoice from the known supplier, unchanged payment details."
+    },
+    {
+      "id": "pub-16",
+      "channel": "email",
+      "from": "Grace Lin <grace.lin@haldensystems.example.com>",
+      "text": "Hi Amara, I'm a recruiter at Halden Systems. Your profile matches a backend engineer role (hybrid, Manchester, £62-70k). Would you be open to a 20-minute call this week? The job description is here: https://careers.haldensystems.example.com/jobs/2214. There's no cost at any stage of our process.",
+      "label": "LEGIT",
+      "category": "job_task",
+      "difficulty": "medium",
+      "rationale": "Ordinary recruiter outreach, no payment asked."
+    },
+    {
+      "id": "pub-17",
+      "channel": "email",
+      "from": "IT Service Desk <servicedesk@meridian-health.example.org>",
+      "text": "Reminder: laptops will install the October security update tonight from 22:00. Please save your work and leave your laptop on charge. You don't need to do anything else. Questions? Raise a ticket on the IT portal.",
+      "label": "LEGIT",
+      "category": "tech_support",
+      "difficulty": "medium",
+      "rationale": "Internal IT notice, no action beyond saving work."
+    },
+    {
+      "id": "pub-18",
+      "channel": "email",
+      "from": "Coinvault Security <no-reply@coinvault.example.com>",
+      "text": "New sign-in to your Coinvault account from Chrome on Windows in Lisbon, Portugal at 09:14 UTC. If this was you, you can ignore this email. If it wasn't, open the Coinvault app and go to Settings > Security to lock your account. We will never ask for your password, 2FA codes or recovery phrase.",
+      "label": "LEGIT",
+      "category": "investment_pig_butchering",
+      "difficulty": "hard",
+      "rationale": "Alarming but genuine security notice: no link, points to the app."
+    },
+    {
+      "id": "pub-19",
+      "channel": "whatsapp",
+      "from": "Chidi (saved contact)",
+      "text": "That dinner was great 😄 the bill came to £96 so £32 each. Here's my payment link when you get a chance, no rush: https://pay.example.com/chidi-o",
+      "label": "LEGIT",
+      "category": "marketplace_overpayment",
+      "difficulty": "hard",
+      "rationale": "Payment request from a saved contact for a shared bill, no pressure."
+    },
+    {
+      "id": "pub-20",
+      "channel": "email",
+      "from": "Tax Office <no-reply@tax.example.gov>",
+      "text": "Your Self Assessment return for the 2025/26 tax year is due by 31 January. Sign in to your online tax account to file it. We will never send you a link to claim a refund by text or email.",
+      "label": "LEGIT",
+      "category": "government_tax",
+      "difficulty": "medium",
+      "rationale": "Deadline reminder with no link and no request for details."
+    }
+  ]
+}

@@ -1,97 +1,121 @@
+import { Link } from "react-router-dom";
+import { PageHead, Panel } from "../components/ui";
 import { config } from "../lib/config";
 
 export function HowPage() {
   return (
     <>
-      <h1>How Proctor works</h1>
-      <p className="lede">
-        A score you can trust needs three things: the model never saw the test, nobody could change the answers, and
-        anyone can check the result. Proctor gets each from a different part of NEAR.
-      </p>
+      <PageHead eyebrow="How it works" title={<>A fair exam, <em>proved</em></>}>
+        A score you can trust needs three things: the model never saw the test, nobody changed the answers, and anyone
+        can check the result. Here is how Proctor gets each one.
+      </PageHead>
 
-      <h2>The flow</h2>
-      <ol className="steps">
-        <li>
-          <strong>An author seals a test set.</strong> The set is encrypted to OutLayer's keystore (keys from NEAR's MPC
-          network), readable only by one grader build (identified by its SHA-256) and only when the Proctor contract
-          calls it. The author registers the set's fingerprint, price and royalty on-chain.
-        </li>
-        <li>
-          <strong>Someone requests an eval</strong> of a model, paying the price plus a deposit for grading jobs.
-        </li>
-        <li>
-          <strong>The contract sends the set out in chunks</strong> to the grader on OutLayer, which runs in an Intel TDX
-          enclave. The grader decrypts its chunk, checks the set's fingerprint, fetches the model's attestation with a
-          fresh nonce, and asks the model, running in a NEAR AI Cloud GPU TEE, about each message.
-        </li>
-        <li>
-          <strong>Every answer is signed</strong> by the model's TEE over the exact request and response bytes. The grader
-          checks the signatures and returns only totals and the signed statements, never the messages or which ones
-          the model got right.
-        </li>
-        <li>
-          <strong>The contract checks everything again on-chain:</strong> right set, model, chunk and run; counts that add
-          up; and every answer's Ed25519 signature against the model's registered key. Then it issues a certificate and
-          pays the author.
-        </li>
-      </ol>
+      <section className="split" style={{ marginTop: 0 }}>
+        <div className="stack">
+          <Panel eyebrow="Step by step" title="From sealed test to result">
+            <ol className="flow">
+              <li>
+                <strong>Someone publishes a test</strong>
+                <p>
+                  A fraud team, say, collects scam and real messages and seals them on their own computer. Only one
+                  open-source grader program can open the seal, and only inside secure hardware.
+                </p>
+              </li>
+              <li>
+                <strong>Someone asks for a model to be certified</strong>
+                <p>They pay the test's price plus a refundable deposit for the grading.</p>
+              </li>
+              <li>
+                <strong>The grader runs the exam in secure hardware</strong>
+                <p>
+                  It opens the test, checks its fingerprint, and shows each message to the model, which also runs in
+                  secure hardware. Nobody outside can see the messages or the answers.
+                </p>
+              </li>
+              <li>
+                <strong>The model signs every answer</strong>
+                <p>
+                  The hardware the model runs on signs each answer together with the exact question. The grader sends
+                  back only totals and those signatures, never the messages.
+                </p>
+              </li>
+              <li>
+                <strong>NEAR checks it all and records the result</strong>
+                <p>
+                  The Proctor contract on NEAR checks every signature before counting it, records the result for good,
+                  and pays the test's author.
+                </p>
+              </li>
+            </ol>
+          </Panel>
 
-      <h2>What you're trusting</h2>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Trusted</th>
-              <th>Why</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Intel TDX and NVIDIA confidential GPUs</td>
-              <td>The hardware behind every attestation</td>
-            </tr>
-            <tr>
-              <td>OutLayer's approved worker measurements</td>
-              <td>Checked on-chain against TDX quotes before a worker can run jobs</td>
-            </tr>
-            <tr>
-              <td>The model's signing key</td>
-              <td>Taken from its attestation report and registered by the attester</td>
-            </tr>
-            <tr>
-              <td>The grader build</td>
-              <td>Open source; rebuild it and compare the hash</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p className="small muted">Not trusted: us, OutLayer's and NEAR AI's operators, requesters and model vendors.</p>
+          <Panel eyebrow="Read results fairly" title="Limits, stated plainly">
+            <ul className="small" style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--ink-secondary)" }}>
+              <li>
+                Only models running in secure hardware can be tested. Sending a private test to any other model would
+                show it to the model's provider.
+              </li>
+              <li>
+                A signature proves which model gave an answer. That the grader scored it honestly rests on its
+                published code and the hardware's proof that this exact code ran.
+              </li>
+              <li>
+                Many runs on the same test could slowly reveal it, so each model gets only a few certifications per
+                test and only totals are published.
+              </li>
+              <li>AI answers vary between runs, so every result combines several runs and shows the range.</li>
+              <li>
+                A result speaks for one test. Our demo test was written for this project and checked by hand; anyone
+                can bring their own.
+              </li>
+            </ul>
+          </Panel>
+        </div>
 
-      <h2>Limits, stated plainly</h2>
-      <ul>
-        <li>
-          Only models served inside a TEE can be certified privately. Sending a private set to a model outside a TEE
-          would leak it to the provider.
-        </li>
-        <li>
-          A signature proves which model produced an answer, not that the grader scored it honestly; honest scoring rests
-          on the grader's published code and OutLayer's TDX attestation.
-        </li>
-        <li>
-          Repeated scoring could slowly reveal a set, so each model gets a capped number of evals and only totals are
-          published.
-        </li>
-        <li>
-          LLM answers vary between runs, even at temperature 0. Certificates combine several runs and show the range.
-        </li>
-        <li>
-          The demo scam set was written for this project and reviewed by hand; a certificate speaks for that set. Any
-          author, such as a bank's fraud team, can bring their own the same way.
-        </li>
-      </ul>
-      <p>
-        Source, tests and design notes: <a href={config.sourceUrl}>{config.sourceUrl}</a>
-      </p>
+        <aside className="stack">
+          <Panel eyebrow="Who you trust" title="And who you don't">
+            <dl className="rows">
+              <div>
+                <dt>Intel TDX and NVIDIA secure GPUs</dt>
+                <dd>trusted</dd>
+              </div>
+              <div>
+                <dt>The open-source grader</dt>
+                <dd>checkable</dd>
+              </div>
+              <div>
+                <dt>The model's signing key</dt>
+                <dd>from its attestation</dd>
+              </div>
+              <div>
+                <dt>Proctor's team</dt>
+                <dd>not needed</dd>
+              </div>
+              <div>
+                <dt>Model makers</dt>
+                <dd>not needed</dd>
+              </div>
+              <div>
+                <dt>Server operators</dt>
+                <dd>not needed</dd>
+              </div>
+            </dl>
+          </Panel>
+          <Panel eyebrow="Built on NEAR" title="The parts">
+            <p className="small" style={{ color: "var(--ink-secondary)", margin: 0 }}>
+              <strong>OutLayer</strong> runs the grader in an Intel TDX enclave and holds the sealed test.{" "}
+              <strong>NEAR AI Cloud</strong> serves the models on secure GPUs and signs their answers. The{" "}
+              <strong>Proctor contract</strong> on NEAR checks every signature, keeps the results and pays authors.
+            </p>
+          </Panel>
+          <Panel className="quiet">
+            <p className="small" style={{ margin: 0 }}>
+              Read the code, tests and design notes at <a href={config.sourceUrl}>{config.sourceUrl.replace("https://", "")}</a>,
+              or <Link to="/">see the results</Link>.
+            </p>
+          </Panel>
+        </aside>
+      </section>
     </>
   );
 }
