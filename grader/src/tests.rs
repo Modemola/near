@@ -8,12 +8,15 @@ const NONCE: &str = "ab12";
 
 /// A fake NEAR AI Cloud that signs responses like the real one, with knobs to
 /// misbehave.
+/// Request and response bytes the mock signed, by chat id.
+type Signed = HashMap<String, (Vec<u8>, Vec<u8>)>;
+
 struct Mock {
     key: SigningKey,
     other_key: SigningKey,
     /// Answer per item text marker; unknown items get "LEGIT: fine".
     answers: HashMap<&'static str, Option<&'static str>>,
-    signed: RefCell<HashMap<String, (Vec<u8>, Vec<u8>)>>,
+    signed: RefCell<Signed>,
     fail_completions: RefCell<usize>,
     tamper_signed_text: bool,
     sign_with_other_key: bool,
@@ -319,4 +322,12 @@ fn verify_rejects_malformed_inputs() {
     assert!(verify_ed25519("zz", &sig, "hello").is_err());
     assert!(verify_ed25519(&pk[..10], &sig, "hello").is_err());
     assert!(verify_ed25519(&pk, &sig[..20], "hello").is_err());
+}
+
+#[test]
+fn prompt_tells_models_details_are_placeholders() {
+    assert!(SYSTEM_PROMPT.starts_with("You check messages for scams."));
+    assert!(SYSTEM_PROMPT.contains("replaced with realistic placeholders"));
+    assert!(SYSTEM_PROMPT.contains("still matter"));
+    assert!(SYSTEM_PROMPT.ends_with("`LEGIT: <reason>`."));
 }

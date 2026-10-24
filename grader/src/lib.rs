@@ -10,13 +10,9 @@ use sha2::{Digest, Sha256};
 
 pub const NEARAI_BASE: &str = "https://cloud-api.near.ai/v1";
 
-/// The fixed instruction every model gets. Part of the grader build, so the
-/// build hash pins it.
-pub const SYSTEM_PROMPT: &str =
-    "You check messages for scams. Read the message and decide whether it is a scam: \
-an attempt to trick the reader into sending money, sharing credentials or codes, \
-installing software, or acting in a hurry against their own interest. \
-Reply on one line as `SCAM: <reason>` or `LEGIT: <reason>`.";
+/// The fixed instruction every model gets, from `prompt.txt` (shared with the
+/// audit scripts). Compiled in, so the grader's build hash pins it.
+pub const SYSTEM_PROMPT: &str = include_str!("../prompt.txt");
 
 /// How many times a failed HTTP call is retried before the chunk fails.
 const RETRIES: usize = 3;

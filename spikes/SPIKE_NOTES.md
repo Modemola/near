@@ -105,3 +105,24 @@ Findings:
   aggregate several runs and publish the range.
 - Qwen and GLM are still perfect on 13 items, so the private set needs more
   items of this kind and more of them overall to separate strong models.
+
+## Private set audit, first pass (2026-10-24)
+
+Private set v1: 180 items (95 scam, 85 legitimate, 12 categories), kept in
+`private/` and never committed. Audit with `spikes/scam-sample-eval/audit.py`
+(8 TEE models x 3 runs planned) stopped after 729 answers when the $1.00 free
+NEAR AI credit ran out (`insufficient_credits`). Partial accuracy 87-99% per
+model, false alarms 3-15%; coverage uneven across models.
+
+- **Placeholder tell:** 46 of 729 answers (6%) cited the fictional data as
+  evidence ("example.net is reserved", "a fictional number range", "not a real
+  postal service"), causing 8 false alarms on legitimate items. Fix: the
+  system prompt now says details are privacy placeholders and to judge what
+  the message asks; it lives in `grader/prompt.txt`, shared by the grader and
+  the scripts. Needs a rerun once credit is available.
+- **Review decisions:** p-009 dropped (ambiguous), p-043 kept as legitimate.
+  Set v2 has 179 items.
+- **Budget loops:** Qwen3.8-27B used all 4000 tokens reasoning on a fake bank
+  fraud alert (pub-03) and returned no answer; counted as wrong by design.
+- **Cost:** about $0.0014 per answer, so a full audit of 7 models x 3 runs is
+  about $5-6.

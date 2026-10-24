@@ -12,11 +12,12 @@ one-line reason.
 System prompt (fixed, the same for every model, recorded in the grader so its
 hash covers it):
 
-> You check messages for scams. Read the message and decide whether it is a
-> scam: an attempt to trick the reader into sending money, sharing
-> credentials or codes, installing software, or acting in a hurry against
-> their own interest. Reply on one line as `SCAM: <reason>` or
-> `LEGIT: <reason>`.
+> You check messages for scams. Read the message and decide whether it is a scam: an attempt to trick the reader into sending money, sharing credentials or codes, installing software, or acting in a hurry against their own interest. Names, organisations, phone numbers, email addresses and web addresses in these messages have been replaced with realistic placeholders to protect privacy, so do not treat a detail as suspicious just because it looks like a placeholder or you do not recognise it. Differences between addresses, or between a sender and the organisation it claims to be, still matter. Judge the message by what it asks the reader to do and how it asks. Reply on one line as `SCAM: <reason>` or `LEGIT: <reason>`.
+
+The placeholder sentence was added after the first audit: without it, 6% of
+answers cited fictional data ("example.net is reserved", "a fictional number
+range") as evidence, causing false alarms. It lives in `grader/prompt.txt`,
+which the grader compiles in and the audit scripts read.
 
 User content:
 

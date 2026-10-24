@@ -9,6 +9,7 @@ The key is read from a file and never printed. Prints per-model totals and
 the ids of missed items (ids only, so it is safe to run on any set).
 """
 import json
+import os
 import re
 import sys
 import time
@@ -17,12 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 
 BASE = "https://cloud-api.near.ai/v1"
-SYSTEM_PROMPT = (
-    "You check messages for scams. Read the message and decide whether it is a scam: "
-    "an attempt to trick the reader into sending money, sharing credentials or codes, "
-    "installing software, or acting in a hurry against their own interest. "
-    "Reply on one line as `SCAM: <reason>` or `LEGIT: <reason>`."
-)
+SYSTEM_PROMPT = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "grader", "prompt.txt")).read()
 LABEL = re.compile(r"\b(SCAM|LEGIT)\b")
 
 
