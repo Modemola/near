@@ -1,0 +1,26 @@
+{
+  "note": "How a model's reply is scored. Shared by the Rust grader tests and spikes/scam-sample-eval/test_labels.py so both read replies the same way. null = no answer (scored wrong).",
+  "cases": [
+    ["SCAM: gift cards and urgency", "SCAM"],
+    ["LEGIT: a routine delivery update", "LEGIT"],
+    ["LEGIT: not a SCAM, just a reminder", "LEGIT"],
+    ["SCAM: claims to be from a LEGIT bank", "SCAM"],
+    ["**SCAM**: asks for a one-time code", "SCAM"],
+    ["`LEGIT`: matches the sender", "LEGIT"],
+    ["> LEGIT - ordinary message", "LEGIT"],
+    ["Verdict:\nSCAM: wants a transfer today", "SCAM"],
+    ["<think>Could this be a SCAM? It reads LEGIT.</think>\n\nLEGIT: fine", "LEGIT"],
+    ["<think>first</think><think>second SCAM</think>\nLEGIT: second thoughts", "LEGIT"],
+    ["This is a SCAM.", "SCAM"],
+    ["Verdict: LEGIT", "LEGIT"],
+    ["This is not a SCAM. LEGIT", null],
+    ["It could be SCAM or LEGIT, hard to say.", null],
+    ["<think>The link looks like a SCAM, so", null],
+    ["<think>unfinished reasoning that never closes", null],
+    ["scam: lowercase is not an answer", null],
+    ["SCAMMER alert", null],
+    ["LEGITIMATE request", null],
+    ["", null],
+    ["   \n  ", null]
+  ]
+}

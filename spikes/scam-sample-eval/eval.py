@@ -19,7 +19,8 @@ import requests
 
 BASE = "https://cloud-api.near.ai/v1"
 SYSTEM_PROMPT = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "grader", "prompt.txt")).read()
-LABEL = re.compile(r"\b(SCAM|LEGIT)\b")
+WORD = re.compile(r"[A-Za-z0-9]+")
+LINE_START = re.compile(r"^[\s*_`>#\-\"']*([A-Za-z0-9]*)")
 
 
 def user_content(item):
@@ -27,11 +28,23 @@ def user_content(item):
 
 
 def parse_label(content):
-    """The first SCAM/LEGIT after any reasoning block, else None."""
+    """The verdict in a reply, read exactly as the grader does (grader/src/lib.rs
+    parse_label; cases in grader/label-cases.json). None is scored as wrong."""
     if content is None:
         return None
-    match = LABEL.search(content.split("</think>")[-1])
-    return match.group(1) if match else None
+    if "</think>" in content:
+        answer = content[content.rfind("</think>") + len("</think>"):]
+    elif "<think>" in content:
+        return None
+    else:
+        answer = content
+    labels = ("SCAM", "LEGIT")
+    for line in answer.splitlines():
+        first = LINE_START.match(line).group(1)
+        if first in labels:
+            return first
+    found = [w for w in WORD.findall(answer) if w in labels]
+    return found[0] if found and all(w == found[0] for w in found) else None
 
 
 def classify(key, model, item):

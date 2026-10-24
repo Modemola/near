@@ -204,17 +204,48 @@ pub fn request_body(model: &str, max_tokens: u32, item: &Item) -> Vec<u8> {
     .expect("request serialises")
 }
 
-/// The label in a model's answer: the first `SCAM` or `LEGIT` word after any
-/// reasoning block. `None` when there is no answer or no label.
+/// The label in a model's answer, read strictly so that credit is only ever
+/// given for a clear verdict (see `label-cases.json`):
+///
+/// 1. Reasoning is ignored: only text after the last `</think>` counts, and a
+///    reasoning block that never closed (the token budget ran out) means no
+///    answer.
+/// 2. A line that starts with `SCAM` or `LEGIT` (after markdown such as `**`,
+///    `` ` `` or `>`) is the verdict, as the prompt asks; the first such line wins.
+/// 3. Otherwise the answer counts only if exactly one of the two words appears.
+///    A reply that mentions both ("not a SCAM. LEGIT") is ambiguous.
+///
+/// Words are maximal runs of ASCII letters and digits, uppercase only.
+/// `None` is scored as wrong.
 pub fn parse_label(content: Option<&str>) -> Option<Label> {
-    let answer = content?.rsplit("</think>").next()?;
-    answer
-        .split(|c: char| !c.is_ascii_alphanumeric())
-        .find_map(|word| match word {
-            "SCAM" => Some(Label::Scam),
-            "LEGIT" => Some(Label::Legit),
-            _ => None,
-        })
+    let content = content?;
+    let answer = match content.rfind("</think>") {
+        Some(end) => &content[end + "</think>".len()..],
+        None if content.contains("<think>") => return None,
+        None => content,
+    };
+    let word = |w: &str| match w {
+        "SCAM" => Some(Label::Scam),
+        "LEGIT" => Some(Label::Legit),
+        _ => None,
+    };
+    let words = |s: &str| -> Vec<Label> {
+        s.split(|c: char| !c.is_ascii_alphanumeric())
+            .filter_map(word)
+            .collect()
+    };
+    for line in answer.lines() {
+        let line = line.trim_start_matches(|c: char| c.is_whitespace() || "*_`>#-\"'".contains(c));
+        let first = line.split(|c: char| !c.is_ascii_alphanumeric()).next().unwrap_or("");
+        if let Some(label) = word(first) {
+            return Some(label);
+        }
+    }
+    let found = words(answer);
+    match found.first() {
+        Some(&first) if found.iter().all(|l| *l == first) => Some(first),
+        _ => None,
+    }
 }
 
 /// The text NEAR AI signs for a `provider_tee` response.

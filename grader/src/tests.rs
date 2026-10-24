@@ -175,16 +175,16 @@ fn mock_with_answers() -> Mock {
 
 #[test]
 fn parses_labels_after_reasoning_and_ignores_lowercase() {
-    assert_eq!(parse_label(Some("SCAM: gift cards")), Some(Label::Scam));
-    assert_eq!(parse_label(Some("LEGIT: not a SCAM")), Some(Label::Legit));
-    assert_eq!(
-        parse_label(Some("<think>SCAM or LEGIT?</think>\n\nLEGIT: fine")),
-        Some(Label::Legit)
-    );
-    assert_eq!(parse_label(Some("This is a SCAM.")), Some(Label::Scam));
-    assert_eq!(parse_label(Some("scam: lowercase is not an answer")), None);
-    assert_eq!(parse_label(Some("SCAMMER")), None);
-    assert_eq!(parse_label(Some("")), None);
+    let cases: serde_json::Value = serde_json::from_str(include_str!("../label-cases.json")).unwrap();
+    for case in cases["cases"].as_array().unwrap() {
+        let reply = case[0].as_str().unwrap();
+        let want = match case[1].as_str() {
+            Some("SCAM") => Some(Label::Scam),
+            Some("LEGIT") => Some(Label::Legit),
+            _ => None,
+        };
+        assert_eq!(parse_label(Some(reply)), want, "reply: {reply:?}");
+    }
     assert_eq!(parse_label(None), None);
 }
 
