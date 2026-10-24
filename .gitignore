@@ -3,3 +3,5 @@ private/
 
 # Build output
 target/
+__pycache__/
+*.pyc
