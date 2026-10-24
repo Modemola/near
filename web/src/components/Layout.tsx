@@ -2,7 +2,9 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { config, isConfigured } from "../lib/config";
 import { proctor } from "../lib/near";
+import { scrollToTop, useSmoothScroll } from "../lib/smooth";
 import { useWallet } from "../lib/wallet";
+import { Cursor } from "./Cursor";
 import { Aurora, useAmbientMotion } from "./motion";
 import { useAsync } from "./ui";
 
@@ -29,11 +31,13 @@ export function Layout() {
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [location.pathname]);
-  useLayoutEffect(() => window.scrollTo({ top: 0 }), [location.pathname]);
+  useSmoothScroll();
+  useLayoutEffect(() => scrollToTop(), [location.pathname]);
 
   return (
     <>
       <Aurora />
+      <Cursor />
       <div className="scroll-progress" aria-hidden="true" />
       <header className="site">
         <div className="wrap">

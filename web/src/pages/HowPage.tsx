@@ -1,13 +1,13 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
-import { SealedCube } from "../components/motion";
+import { GlassVault } from "../components/GlassVault";
 import { PageHead, Panel } from "../components/ui";
 import { config } from "../lib/config";
 
 export function HowPage() {
   return (
     <>
-      <PageHead eyebrow="How it works" title={<>A fair exam, <em>proved</em></>} art={<SealedCube />}>
+      <PageHead eyebrow="How it works" title={<>A fair exam, <em>proved</em></>} art={<GlassVault />}>
         A score you can trust needs three things: the model never saw the test, nobody changed the answers, and anyone
         can check the result. Here is how Proctor gets each one.
       </PageHead>

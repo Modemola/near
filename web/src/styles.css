@@ -710,3 +710,34 @@ pre.cmd { border-radius: var(--r-sm); box-shadow: var(--neu-in); padding: 0.95re
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .celebrate { display: none; }
 }
+
+/* Lenis drives scrolling on desktop; native smooth scrolling would fight it. */
+html.lenis { scroll-behavior: auto; }
+
+/* ---------- Custom cursor (desktop pointers only) ---------- */
+.cursor-dot, .cursor-ring { display: none; }
+.has-cursor, .has-cursor * { cursor: none !important; }
+.has-cursor input:not([type=file]), .has-cursor textarea { cursor: text !important; }
+.has-cursor .cursor-dot, .has-cursor .cursor-ring { display: block; position: fixed; left: 0; top: 0; z-index: 2147483000; pointer-events: none; }
+.cursor-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--glow); }
+.cursor-ring { width: 0; height: 0; }
+.cursor-ring::before { content: ""; position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent); transition: transform 0.45s var(--spring), background-color 0.35s, border-color 0.35s, opacity 0.3s; }
+.cursor-ring span { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%) scale(0.6); font: 600 9.5px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-ink); opacity: 0; transition: opacity 0.25s, transform 0.4s var(--spring); white-space: nowrap; }
+.cursor-ring.hot::before { transform: scale(1.6); background: color-mix(in srgb, var(--accent-2) 14%, transparent); border-color: var(--accent); }
+.cursor-ring.labelled::before { transform: scale(2.1); background: var(--accent); border-color: var(--accent); box-shadow: 0 0 24px var(--glow); }
+.cursor-ring.labelled span { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.cursor-ring.down::before { transform: scale(0.8); }
+.cursor-ring.labelled.down::before { transform: scale(1.8); }
+.cursor-ring.text::before, .cursor-dot.text { opacity: 0; }
+.cursor-out .cursor-dot, .cursor-out .cursor-ring { opacity: 0; }
+.has-cursor .board-row:not(.head) { cursor: none; }
+
+/* ---------- WebGL glass vault ---------- */
+.vault { position: relative; width: 100%; height: 290px; display: grid; place-items: center; }
+.vault-gl { position: absolute; inset: -20px; opacity: 0; transition: opacity 1.2s var(--ease); }
+.vault.gl .vault-gl { opacity: 1; }
+.vault-gl canvas { display: block; }
+.vault > .cube-scene { position: absolute; inset: 0; height: auto; }
+.vault-floor { position: absolute; left: 22%; right: 22%; bottom: 6px; height: 26px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, transparent), transparent); filter: blur(8px); animation: floor 4.5s ease-in-out infinite; }
+@keyframes floor { 50% { transform: scaleX(0.85); opacity: 0.7; } }
+@media (min-width: 860px) { .page-head.with-art { grid-template-columns: minmax(0, 1fr) 320px; } }

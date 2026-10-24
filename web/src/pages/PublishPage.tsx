@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { SealedCube } from "../components/motion";
+import { GlassVault } from "../components/GlassVault";
 import { ErrorNote, Hash, PageHead, Panel, useAsync } from "../components/ui";
 import { parseTestSet, setCommitment, type ParsedSet } from "../lib/commitment";
 import { config } from "../lib/config";
@@ -142,7 +142,7 @@ export function PublishPage() {
 
   return (
     <>
-      <PageHead eyebrow="Publish a test" title={<>Turn your scam examples into a <em>sealed</em> test</>} art={<SealedCube />}>
+      <PageHead eyebrow="Publish a test" title={<>Turn your scam examples into a <em>sealed</em> test</>} art={<GlassVault />}>
         Fraud teams, researchers and anyone with real examples can publish a test. Models get graded on it without
         anyone, including us, reading the messages. You earn a share of every certification.
       </PageHead>

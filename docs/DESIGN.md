@@ -74,3 +74,18 @@ Motion that tells Proctor's story, each piece tied to what the product does:
   the plain route transition).
 - **Decoding hashes**, **magnetic buttons**, and a **certified moment** (stamp
   slam and bead burst) when a run finishes while you watch it.
+
+## Inertia, cursor and WebGL (revision 4)
+
+- **Inertia scrolling** (Lenis 1.3.26) on desktop pointers. Phones, touch and
+  reduced-motion users keep native scrolling; tables, code, the nav strip and
+  the wallet modal scroll natively.
+- **Custom cursor** on desktop pointers: a precise dot and a trailing ring
+  that grows over anything pressable, reads "View" over leaderboard rows
+  (clicking a row opens its result) and "Paused" over the message scanner.
+  Text fields keep the native caret; reduced motion keeps the normal cursor.
+- **WebGL glass vault** (three.js 0.185.1) on Tests, How it works and Publish:
+  a framed glass block with a glowing core and the messages orbiting inside,
+  turning towards the pointer. Loaded as its own chunk only on those pages,
+  paused off-screen, with the CSS cube as the fallback without WebGL or with
+  reduced motion.

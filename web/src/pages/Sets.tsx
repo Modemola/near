@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { SealedCube } from "../components/motion";
+import { GlassVault } from "../components/GlassVault";
 import { Loading, PageHead, Panel, Unavailable, useAsync } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { formatNear, proctor } from "../lib/near";
@@ -8,7 +8,7 @@ export function Sets() {
   const { data, error, loading } = useAsync(() => (isConfigured ? proctor.sets() : Promise.resolve([])), []);
   return (
     <>
-      <PageHead eyebrow="Tests" title={<>Sealed <em>tests</em></>} art={<SealedCube />}>
+      <PageHead eyebrow="Tests" title={<>Sealed <em>tests</em></>} art={<GlassVault />}>
         Each test is a set of real-looking messages, some scams and some not. Nobody can read them, not even us; only
         their fingerprints are public.
       </PageHead>
