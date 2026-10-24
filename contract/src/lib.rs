@@ -25,9 +25,22 @@ pub const MAX_ATTEMPTS: u8 = 3;
 /// 50 TGas for its own settlement callback and burns a few more admitting the
 /// request.
 pub const GAS_FOR_OUTLAYER: Gas = Gas::from_tgas(75);
-/// Gas for `on_chunk`: JSON parsing plus one Ed25519 check (~0.21 TGas) per
-/// answer.
-pub const GAS_FOR_CALLBACK: Gas = Gas::from_tgas(30);
+/// Gas for `on_chunk`: JSON parsing, one Ed25519 check (~0.21 TGas) per
+/// answer, rewriting the eval and, on the last chunk, the certificate.
+/// Sized from the worst case measured in the integration tests.
+pub const GAS_FOR_CALLBACK: Gas = Gas::from_tgas(50);
+/// A chunk still in flight this many blocks after dispatch lost its callback
+/// (OutLayer's own yield times out after about 200 blocks), so `dispatch`
+/// counts the attempt as failed and retries it. Keeps an eval from being
+/// stuck, with its money locked, if a callback ever panics.
+pub const STALE_AFTER_BLOCKS: u64 = 500;
+/// Storage reserved per chunk for its final state, and for the certificate.
+/// The requester pays it up front, so callbacks never draw on the contract's
+/// own balance.
+const STORAGE_PER_CHUNK: u64 = 120;
+const STORAGE_FOR_CERTIFICATE: u64 = 2_500;
+/// Longest failure reason kept in state.
+const MAX_ERROR_LEN: usize = 160;
 /// Gas kept back by `dispatch` for its own bookkeeping.
 const GAS_RESERVE: Gas = Gas::from_tgas(15);
 /// Basis points in one.
@@ -129,14 +142,20 @@ pub enum ChunkState {
     },
     InFlight {
         attempts: u8,
+        /// Block the job was dispatched in, and the transaction signer who
+        /// dispatched it: enough to find that transaction with plain RPC.
+        since: U64,
+        by: AccountId,
     },
     Done {
         confusion: Confusion,
-        records_digest: String,
-        signer: String,
-        /// Block in which the chunk was accepted; its `chunk_accepted` event
-        /// (with every signed answer) is in that block's receipt outcomes.
+        /// Block in which the chunk was accepted.
         block_height: U64,
+        /// Where its `chunk_accepted` event (every signed answer) can be
+        /// found: the transaction signed by `by` that dispatched it, in or
+        /// just before block `dispatched_at`.
+        dispatched_at: U64,
+        by: AccountId,
     },
     Failed {
         attempts: u8,
@@ -168,7 +187,10 @@ pub struct Eval {
     /// Deposit still held for OutLayer jobs not yet dispatched.
     pub escrow: U128,
     /// The grader build the eval runs on, fixed at request time.
+    pub grader_url: String,
     pub grader_hash: String,
+    /// The model keys that signed accepted chunks.
+    pub signers: Vec<String>,
     /// Run-major: index = run * chunks_per_run + chunk.
     pub chunks: Vec<ChunkState>,
     pub status: EvalStatus,
@@ -463,7 +485,9 @@ impl Proctor {
             price: set.price,
             job_deposit: self.config.job_deposit,
             escrow: U128(escrow),
+            grader_url: self.config.grader_url.clone(),
             grader_hash: self.config.grader_hash.clone(),
+            signers: Vec::new(),
             chunks: vec![
                 ChunkState::Pending { attempts: 0 };
                 chunks_per_run as usize * runs as usize
@@ -478,8 +502,14 @@ impl Proctor {
         self.evals_started.insert(cap_key, started + 1);
         self.evals.flush();
         self.evals_started.flush();
-        // Room for the certificate the eval ends with.
-        let storage = storage_cost(env::storage_usage().saturating_sub(before) + 1_500);
+        // Room for every chunk's final state and the certificate, paid now so
+        // that callbacks never need the contract's own balance.
+        let total_chunks = u64::from(chunks_per_run) * u64::from(runs);
+        let storage = storage_cost(
+            env::storage_usage().saturating_sub(before)
+                + total_chunks * STORAGE_PER_CHUNK
+                + STORAGE_FOR_CERTIFICATE,
+        );
         let required = set.price.0 + escrow + storage.as_yoctonear();
         let attached = env::attached_deposit().as_yoctonear();
         require!(
@@ -520,15 +550,19 @@ impl Proctor {
             return false;
         };
         let i = index as usize;
-        if eval.status != EvalStatus::Running
-            || eval.chunks.get(i) != Some(&ChunkState::InFlight { attempts: attempt })
-        {
+        let dispatch = match eval.chunks.get(i) {
+            Some(ChunkState::InFlight { attempts, since, by }) if *attempts == attempt => {
+                Some((*since, by.clone()))
+            }
+            _ => None,
+        };
+        let Some((dispatched_at, by)) = dispatch.filter(|_| eval.status == EvalStatus::Running) else {
             env::log_str(&format!(
                 "eval {} chunk {index}: stale result ignored",
                 eval_id.0
             ));
             return false;
-        }
+        };
         let run = (index / eval.chunks_per_run) as usize;
         let chunk = index % eval.chunks_per_run;
         let set = self.sets.get(&eval.set_id).cloned().expect("set exists");
@@ -557,14 +591,20 @@ impl Proctor {
                         "signer": report.signer,
                         "records_digest": report.records_digest,
                         "confusion": report.confusion,
-                        "answers": report.answers.iter().map(|(t, s)| json!({"text": t, "signature": s})).collect::<Vec<_>>(),
+                        // Each signed text is "<model_id>:<req>:<resp>"; the
+                        // model id is left out to keep the log well under
+                        // NEAR's 16 KiB limit.
+                        "answers": report.answers.iter().map(|(req, resp, sig)| json!({"req": req, "resp": resp, "sig": sig})).collect::<Vec<_>>(),
                     }),
                 );
+                if !eval.signers.contains(&report.signer) {
+                    eval.signers.push(report.signer);
+                }
                 eval.chunks[i] = ChunkState::Done {
                     confusion: report.confusion,
-                    records_digest: report.records_digest,
-                    signer: report.signer,
                     block_height: U64(env::block_height()),
+                    dispatched_at,
+                    by,
                 };
             }
             Err(error) => {
@@ -574,25 +614,13 @@ impl Proctor {
                 ));
                 eval.chunks[i] = ChunkState::Failed {
                     attempts: attempt,
-                    error,
+                    error: truncate(&error),
                 };
             }
         }
 
         let ok = matches!(eval.chunks[i], ChunkState::Done { .. });
-        if eval
-            .chunks
-            .iter()
-            .all(|c| matches!(c, ChunkState::Done { .. }))
-        {
-            self.certify(&mut eval, &set);
-        } else if eval
-            .chunks
-            .iter()
-            .any(|c| matches!(c, ChunkState::Failed { attempts, .. } if *attempts >= MAX_ATTEMPTS))
-        {
-            self.fail(&mut eval, "a chunk failed on every attempt");
-        }
+        self.settle(&mut eval, &set);
         self.evals.insert(eval_id.0, eval);
         ok
     }
@@ -671,16 +699,18 @@ impl Proctor {
             .unwrap_or(0)
     }
 
-    /// The deposit `request_eval` needs, excluding storage (add ~0.05 NEAR).
+    /// The deposit `request_eval` needs: price, grading escrow and the
+    /// storage reserve. Attach a little more (the eval record itself takes a
+    /// few hundred bytes); whatever is unused is refunded.
     pub fn quote_eval(&self, set_id: String) -> U128 {
         let set = self
             .sets
             .get(&set_id)
             .unwrap_or_else(|| env::panic_str("no such set"));
-        let jobs = u128::from(set.item_count.div_ceil(set.chunk_size))
-            * u128::from(self.config.runs_per_eval)
-            * u128::from(MAX_ATTEMPTS);
-        U128(set.price.0 + self.config.job_deposit.0 * jobs)
+        let chunks = u64::from(set.item_count.div_ceil(set.chunk_size)) * u64::from(self.config.runs_per_eval);
+        let jobs = u128::from(chunks) * u128::from(MAX_ATTEMPTS);
+        let storage = storage_cost(chunks * STORAGE_PER_CHUNK + STORAGE_FOR_CERTIFICATE);
+        U128(set.price.0 + self.config.job_deposit.0 * jobs + storage.as_yoctonear())
     }
 }
 
@@ -726,7 +756,25 @@ impl Proctor {
             return 0;
         }
         let set = self.sets.get(&eval.set_id).cloned().expect("set exists");
+        let now = env::block_height();
+        // A job whose callback never came back counts as a failed attempt.
+        for c in eval.chunks.iter_mut() {
+            if let ChunkState::InFlight { attempts, since, .. } = c {
+                if now >= since.0 + STALE_AFTER_BLOCKS {
+                    *c = ChunkState::Failed {
+                        attempts: *attempts,
+                        error: "no result came back; retrying".into(),
+                    };
+                }
+            }
+        }
+        self.settle(&mut eval, &set);
+        if eval.status != EvalStatus::Running {
+            self.evals.insert(id, eval);
+            return 0;
+        }
         let per_job = GAS_FOR_OUTLAYER.saturating_add(GAS_FOR_CALLBACK);
+        let by = env::signer_account_id();
         let mut started = 0u32;
         for i in 0..eval.chunks.len() {
             let remaining = env::prepaid_gas().saturating_sub(env::used_gas());
@@ -741,7 +789,11 @@ impl Proctor {
             let attempt = attempts + 1;
             require!(eval.escrow.0 >= eval.job_deposit.0, "escrow exhausted");
             eval.escrow = U128(eval.escrow.0 - eval.job_deposit.0);
-            eval.chunks[i] = ChunkState::InFlight { attempts: attempt };
+            eval.chunks[i] = ChunkState::InFlight {
+                attempts: attempt,
+                since: U64(now),
+                by: by.clone(),
+            };
             let run = i / eval.chunks_per_run as usize;
             let chunk = i as u32 % eval.chunks_per_run;
             self.start_job(&eval, &set, i as u32, run, chunk, attempt);
@@ -770,7 +822,7 @@ impl Proctor {
             "sealed_api_key": self.config.sealed_api_key,
         });
         let args = json!({
-            "source": {"WasmUrl": {"url": self.config.grader_url, "hash": eval.grader_hash, "build_target": "wasm32-wasip2"}},
+            "source": {"WasmUrl": {"url": eval.grader_url, "hash": eval.grader_hash, "build_target": "wasm32-wasip2"}},
             "resource_limits": {
                 "max_instructions": 100_000_000_000u64,
                 "max_memory_mb": 256,
@@ -799,18 +851,12 @@ impl Proctor {
 
     fn certify(&mut self, eval: &mut Eval, set: &TestSet) {
         let mut runs = vec![Confusion::default(); eval.runs as usize];
-        let mut signers: Vec<String> = Vec::new();
         for (i, c) in eval.chunks.iter().enumerate() {
-            if let ChunkState::Done {
-                confusion, signer, ..
-            } = c
-            {
+            if let ChunkState::Done { confusion, .. } = c {
                 runs[i / eval.chunks_per_run as usize].add(confusion);
-                if !signers.contains(signer) {
-                    signers.push(signer.clone());
-                }
             }
         }
+        let signers = eval.signers.clone();
         let accs: Vec<u16> = runs.iter().map(|r| bps(r.tp + r.tn, r.total())).collect();
         let mean = |f: &dyn Fn(&Confusion) -> u16| {
             (runs.iter().map(|r| u32::from(f(r))).sum::<u32>() / runs.len() as u32) as u16
@@ -858,7 +904,29 @@ impl Proctor {
         );
     }
 
+    /// Certify when every chunk is done; fail when a chunk is out of attempts.
+    fn settle(&mut self, eval: &mut Eval, set: &TestSet) {
+        if eval.status != EvalStatus::Running {
+            return;
+        }
+        if eval.chunks.iter().all(|c| matches!(c, ChunkState::Done { .. })) {
+            self.certify(eval, set);
+        } else if eval
+            .chunks
+            .iter()
+            .any(|c| matches!(c, ChunkState::Failed { attempts, .. } if *attempts >= MAX_ATTEMPTS))
+        {
+            self.fail(eval, "a chunk failed on every attempt");
+        }
+    }
+
     fn fail(&mut self, eval: &mut Eval, reason: &str) {
+        // A failed eval doesn't use up the model's cap on this set: nothing
+        // was certified, and a grading outage shouldn't lock a model out.
+        let cap_key = format!("{}|{}", eval.set_id, eval.model_id);
+        if let Some(n) = self.evals_started.get_mut(&cap_key) {
+            *n = n.saturating_sub(1);
+        }
         eval.status = EvalStatus::Failed;
         eval.error = Some(reason.to_string());
         refund(
@@ -876,6 +944,18 @@ fn emit(event: &str, data: near_sdk::serde_json::Value) {
         "EVENT_JSON:{}",
         json!({"standard": "proctor", "version": "1.0.0", "event": event, "data": [data]})
     ));
+}
+
+/// Cut a failure reason to `MAX_ERROR_LEN` bytes on a character boundary.
+fn truncate(s: &str) -> String {
+    if s.len() <= MAX_ERROR_LEN {
+        return s.to_string();
+    }
+    let mut end = MAX_ERROR_LEN;
+    while !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…", &s[..end])
 }
 
 fn refund(to: &AccountId, amount: NearToken) {

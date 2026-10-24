@@ -213,11 +213,13 @@ fn refuses_a_duplicate_set_id() {
 }
 
 #[test]
-fn quotes_price_plus_worst_case_job_deposits() {
+fn quotes_price_worst_case_job_deposits_and_storage() {
     let p = setup();
-    // 3 chunks x 2 runs x 3 attempts x 0.01 NEAR + 1 NEAR price.
+    // 1 NEAR price + 3 chunks x 2 runs x 3 attempts x 0.01 NEAR, plus storage
+    // for 6 chunks' final states and the certificate.
+    let storage = env::storage_byte_cost().as_yoctonear() * u128::from(6 * STORAGE_PER_CHUNK + STORAGE_FOR_CERTIFICATE);
     let expected =
-        NearToken::from_near(1).as_yoctonear() + 18 * NearToken::from_millinear(10).as_yoctonear();
+        NearToken::from_near(1).as_yoctonear() + 18 * NearToken::from_millinear(10).as_yoctonear() + storage;
     assert_eq!(p.quote_eval("scam-v1".into()).0, expected);
 }
 
@@ -257,7 +259,7 @@ fn an_accepted_chunk_emits_its_signed_answers() {
     context(accounts(3), NearToken::from_near(5));
     let id = p.request_eval("scam-v1".into(), "Qwen/Qwen3.8-27B".into());
     let eval = p.get_eval(id).unwrap();
-    assert_eq!(eval.chunks[0], ChunkState::InFlight { attempts: 1 });
+    assert!(matches!(eval.chunks[0], ChunkState::InFlight { attempts: 1, .. }));
 
     context(
         "proctor.testnet".parse().unwrap(),
@@ -278,6 +280,11 @@ fn an_accepted_chunk_emits_its_signed_answers() {
     assert_eq!(data["eval_id"], "0");
     assert_eq!(data["nonce"], eval.nonces[0].as_str());
     assert_eq!(data["answers"].as_array().unwrap().len(), 2);
+    // Compact answers: the signed text is "<model>:<req>:<resp>", and it verifies.
+    let a = &data["answers"][0];
+    let text = format!("Qwen/Qwen3.8-27B:{}:{}", a["req"].as_str().unwrap(), a["resp"].as_str().unwrap());
+    let sig: [u8; 64] = hex::decode(a["sig"].as_str().unwrap()).unwrap().try_into().unwrap();
+    assert!(env::ed25519_verify(&sig, text.as_bytes(), &key.verifying_key().to_bytes()));
     assert!(matches!(
         p.get_eval(id).unwrap().chunks[0],
         ChunkState::Done { .. }
@@ -305,4 +312,117 @@ fn rejects_a_sealed_set_that_differs_from_its_commitment() {
     v["output"]["set_commitment"] = serde_json::json!(hex64("a different set"));
     let e = validate::check_chunk(&v.to_string(), &set, &model, "n1", 0).unwrap_err();
     assert!(e.contains("commitment"), "{e}");
+}
+
+
+fn context_at(predecessor: AccountId, deposit: NearToken, height: u64) {
+    testing_env!(VMContextBuilder::new()
+        .current_account_id("proctor.testnet".parse().unwrap())
+        .predecessor_account_id(predecessor.clone())
+        .signer_account_id(predecessor)
+        .attached_deposit(deposit)
+        .prepaid_gas(Gas::from_tgas(300))
+        .block_index(height)
+        .build());
+}
+
+/// A contract with a model keyed to `key` and one running eval (id 0).
+fn running_eval(key: &ed25519_dalek::SigningKey) -> Proctor {
+    context_at(accounts(0), NearToken::from_yoctonear(0), 100);
+    let mut p = Proctor::new(accounts(0), config());
+    context_at(accounts(1), NearToken::from_yoctonear(0), 100);
+    let m = model_for(key);
+    p.register_model(m.model_id, m.signers, m.attestation_report_sha256);
+    context_at(accounts(2), NearToken::from_near(1), 100);
+    p.register_set(new_set());
+    let quote = p.quote_eval("scam-v1".into()).0;
+    context_at(accounts(3), NearToken::from_yoctonear(quote + 10u128.pow(22)), 100);
+    p.request_eval("scam-v1".into(), "Qwen/Qwen3.8-27B".into());
+    p
+}
+
+#[test]
+fn quote_covers_storage_and_dispatch_records_who_and_when() {
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let p = running_eval(&key);
+    let eval = p.get_eval(U64(0)).unwrap();
+    match &eval.chunks[0] {
+        ChunkState::InFlight { attempts, since, by } => {
+            assert_eq!((*attempts, since.0, by.clone()), (1, 100, accounts(3)));
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_lost_callback_is_retried_and_its_late_result_ignored() {
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let mut p = running_eval(&key);
+    let nonce = p.get_eval(U64(0)).unwrap().nonces[0].clone();
+
+    // Too early: nothing to retry, chunk 0 stays in flight.
+    context_at(accounts(4), NearToken::from_yoctonear(0), 100 + STALE_AFTER_BLOCKS - 1);
+    p.dispatch(U64(0));
+    assert!(matches!(p.get_eval(U64(0)).unwrap().chunks[0], ChunkState::InFlight { attempts: 1, .. }));
+
+    // After the timeout, dispatch retries it as attempt 2.
+    context_at(accounts(4), NearToken::from_yoctonear(0), 100 + STALE_AFTER_BLOCKS);
+    p.dispatch(U64(0));
+    assert!(matches!(p.get_eval(U64(0)).unwrap().chunks[0], ChunkState::InFlight { attempts: 2, .. }));
+
+    // The first attempt's result, arriving late, is ignored.
+    context("proctor.testnet".parse().unwrap(), NearToken::from_yoctonear(0));
+    assert!(!p.on_chunk(U64(0), 0, 1, Ok(Some(signed_output(&key, 0, 2, &nonce)))));
+    // The retry's result is accepted.
+    context("proctor.testnet".parse().unwrap(), NearToken::from_yoctonear(0));
+    assert!(p.on_chunk(U64(0), 0, 2, Ok(Some(signed_output(&key, 0, 2, &nonce)))));
+}
+
+#[test]
+fn a_chunk_lost_on_every_attempt_fails_the_eval_and_frees_the_cap() {
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let mut p = running_eval(&key);
+    assert_eq!(p.evals_started("scam-v1".into(), "Qwen/Qwen3.8-27B".into()), 1);
+    let mut height = 100;
+    for _ in 0..MAX_ATTEMPTS {
+        height += STALE_AFTER_BLOCKS;
+        context_at(accounts(4), NearToken::from_yoctonear(0), height);
+        p.dispatch(U64(0));
+    }
+    let eval = p.get_eval(U64(0)).unwrap();
+    assert_eq!(eval.status, EvalStatus::Failed);
+    assert_eq!(eval.escrow.0, 0, "escrow refunded");
+    assert_eq!(p.evals_started("scam-v1".into(), "Qwen/Qwen3.8-27B".into()), 0, "cap freed");
+}
+
+#[test]
+fn a_huge_grader_error_is_cut_short() {
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let mut p = running_eval(&key);
+    let out = serde_json::json!({"success": false, "output": null, "error": "é".repeat(5_000)}).to_string();
+    context("proctor.testnet".parse().unwrap(), NearToken::from_yoctonear(0));
+    assert!(!p.on_chunk(U64(0), 0, 1, Ok(Some(out))));
+    match &p.get_eval(U64(0)).unwrap().chunks[0] {
+        ChunkState::Failed { error, .. } => assert!(error.len() <= MAX_ERROR_LEN + 4, "{}", error.len()),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn overflowing_counts_are_rejected_not_panicked_on() {
+    context(accounts(0), NearToken::from_yoctonear(0));
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let mut v: serde_json::Value = serde_json::from_str(&signed_output(&key, 0, 2, "n1")).unwrap();
+    v["output"]["confusion"] = serde_json::json!({"tp": u32::MAX, "fp": 3, "tn": 0, "fn_": 0, "unparsed": 0});
+    let e = validate::check_chunk(&v.to_string(), &stored_set(), &model_for(&key), "n1", 0).unwrap_err();
+    assert!(e.contains("expected"), "{e}");
+}
+
+#[test]
+fn unreadable_output_fails_the_attempt_without_panicking() {
+    let key = ed25519_dalek::SigningKey::from_bytes(&[3u8; 32]);
+    let mut p = running_eval(&key);
+    context("proctor.testnet".parse().unwrap(), NearToken::from_yoctonear(0));
+    assert!(!p.on_chunk(U64(0), 0, 1, Ok(Some("not json at all".into()))));
+    assert!(matches!(p.get_eval(U64(0)).unwrap().chunks[0], ChunkState::Failed { attempts: 1, .. }));
 }

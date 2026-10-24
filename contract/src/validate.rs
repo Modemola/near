@@ -24,6 +24,11 @@ impl Confusion {
         self.tp + self.fp + self.tn + self.fn_
     }
 
+    /// `total`, or `None` if the counts are absurd enough to overflow.
+    pub fn checked_total(&self) -> Option<u32> {
+        self.tp.checked_add(self.fp)?.checked_add(self.tn)?.checked_add(self.fn_)
+    }
+
     pub fn add(&mut self, other: &Confusion) {
         self.tp += other.tp;
         self.fp += other.fp;
@@ -69,9 +74,10 @@ pub struct ChunkReport {
     pub confusion: Confusion,
     pub records_digest: String,
     pub signer: String,
-    /// The signed statements, as (text, signature hex). Emitted in the
+    /// The signed statements, as (request hash, response hash, signature),
+    /// all hex; the signed text is "<model_id>:<req>:<resp>". Emitted in the
     /// `chunk_accepted` event so anyone can re-verify them; not stored.
-    pub answers: Vec<(String, String)>,
+    pub answers: Vec<(String, String, String)>,
 }
 
 fn decode_hex<const N: usize>(s: &str) -> Option<[u8; N]> {
@@ -119,7 +125,7 @@ pub fn check_chunk(
     if expected == 0
         || o.n != expected
         || o.answers.len() != expected as usize
-        || o.confusion.total() != expected
+        || o.confusion.checked_total() != Some(expected)
     {
         return Err(format!("expected {expected} graded items"));
     }
@@ -136,6 +142,7 @@ pub fn check_chunk(
     let key: [u8; 32] = decode_hex(&o.signer).ok_or("bad signer key")?;
     let prefix = format!("{}:", model.model_id);
     let mut requests: Vec<&str> = Vec::with_capacity(o.answers.len());
+    let mut answers = Vec::with_capacity(o.answers.len());
     for (i, a) in o.answers.iter().enumerate() {
         let rest = a
             .text
@@ -156,15 +163,15 @@ pub fn check_chunk(
         if !env::ed25519_verify(&sig, a.text.as_bytes(), &key) {
             return Err(format!("answer {i} signature does not verify"));
         }
+        if !is_hex(&a.signature, 128) {
+            return Err(format!("answer {i} has a bad signature"));
+        }
+        answers.push((req.to_string(), resp.to_string(), a.signature.clone()));
     }
     Ok(ChunkReport {
         confusion: o.confusion,
         records_digest: o.records_digest,
         signer: o.signer,
-        answers: o
-            .answers
-            .into_iter()
-            .map(|a| (a.text, a.signature))
-            .collect(),
+        answers,
     })
 }

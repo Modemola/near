@@ -709,3 +709,91 @@ async fn only_the_right_accounts_can_act() -> anyhow::Result<()> {
         .contains("paused"));
     Ok(())
 }
+
+/// The heaviest callback the contract can face: 40 signed answers in one
+/// chunk of the largest eval it accepts (600 chunks), so the eval record it
+/// rewrites is as big as it gets. It must fit `GAS_FOR_CALLBACK` (50 TGas)
+/// with room to spare, and its event must fit NEAR's 16 KiB log limit.
+#[tokio::test]
+async fn the_worst_case_callback_fits_its_gas_and_log_limits() -> anyhow::Result<()> {
+    let env = setup().await?;
+    let per_run = 600 / RUNS as u32;
+    let items = (per_run * 40).min(10_000);
+    env.author
+        .call(env.proctor.id(), "register_set")
+        .args_json(json!({"set": {
+            "set_id": "big", "title": "Largest set", "description": "",
+            "commitment": sha("the private set"), "item_count": items, "chunk_size": 40,
+            "max_tokens": 4000, "price": near(1).as_yoctonear().to_string(), "author_bps": 7000,
+            "secrets_profile": "big", "eval_cap_per_model": 1,
+        }}))
+        .deposit(NearToken::from_millinear(100))
+        .transact()
+        .await?
+        .into_result()?;
+    let quote: String = env.proctor.view("quote_eval").args_json(json!({"set_id": "big"})).await?.json()?;
+    let tx = env
+        .requester
+        .call(env.proctor.id(), "request_eval")
+        .args_json(json!({"set_id": "big", "model_id": MODEL}))
+        .deposit(NearToken::from_yoctonear(quote.parse::<u128>()? + 10u128.pow(23)))
+        .gas(Gas::from_tgas(300))
+        .transact_async()
+        .await?;
+    let requests = wait_for(|| async {
+        let r = pending_requests(&env).await?;
+        Ok((r.len() >= 2).then_some(r))
+    })
+    .await?;
+    for r in &requests {
+        let job = job_of(r);
+        let answers: Vec<Value> = (0..40)
+            .map(|i| {
+                let text = format!("{MODEL}:{}:{}", sha(&format!("req {} {i} {}", job["chunk"], job["nonce"])), sha(&format!("resp {i}")));
+                json!({"text": text, "signature": hex::encode(env.model_key.sign(text.as_bytes()).to_bytes())})
+            })
+            .collect();
+        let out = json!({"success": true, "error": null, "output": {
+            "set_id": "big", "model": MODEL, "chunk": job["chunk"], "nonce": job["nonce"],
+            "set_commitment": sha("the private set"), "n": 40,
+            "confusion": {"tp": 20, "fp": 0, "tn": 20, "fn_": 0, "unparsed": 0},
+            "signer": hex::encode(env.model_key.verifying_key().to_bytes()),
+            "answers": answers, "records_digest": sha("digest"),
+        }})
+        .to_string();
+        env.keeper
+            .call(env.outlayer.id(), "resolve")
+            .args_json(json!({"request_id": r["id"], "output": out}))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+    }
+    wait_for(|| async {
+        let e = get_eval(&env, 0).await?;
+        let done = (0..2).filter(|i| e["chunks"][*i]["state"] == "Done").count();
+        Ok((done == 2).then_some(()))
+    })
+    .await?;
+    let outcome = wait_for(|| async {
+        Ok(match tx.status().await? {
+            std::task::Poll::Ready(o) => Some(o),
+            std::task::Poll::Pending => None,
+        })
+    })
+    .await?;
+    let callbacks: Vec<_> = outcome
+        .receipt_outcomes()
+        .iter()
+        .filter(|o| o.executor_id == *env.proctor.id() && o.logs.iter().any(|l| l.contains("chunk_accepted")))
+        .collect();
+    assert_eq!(callbacks.len(), 2, "both chunks accepted");
+    for c in callbacks {
+        let tgas = c.gas_burnt.as_tgas();
+        let log = c.logs.iter().map(|l| l.len()).max().unwrap();
+        println!("worst-case on_chunk: {tgas} TGas burnt, longest log {log} bytes");
+        assert!(tgas <= 35, "on_chunk burnt {tgas} TGas; budget is 50");
+        assert!(log < 16_384, "event of {log} bytes exceeds the log limit");
+    }
+    Ok(())
+}
