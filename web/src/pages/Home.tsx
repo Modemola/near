@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Leaderboard, latestPerModel, medianRun, plainCounts } from "../components/Leaderboard";
+import { ExamStory } from "../components/ExamStory";
 import { Reveal, useTilt } from "../components/motion";
+import { ScanStrip } from "../components/ScanStrip";
 import { AnswerSheet, Panel, Stamp, Stat, StatStrip, Unavailable, useAsync, Words } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { pct, proctor } from "../lib/near";
@@ -36,7 +38,7 @@ export function Home() {
             <a className="btn" href="#results">
               See the results
             </a>
-            <Link className="btn secondary" to="/how">
+            <Link viewTransition className="btn secondary" to="/how">
               How it stays fair
             </Link>
           </div>
@@ -57,6 +59,24 @@ export function Home() {
         </StatStrip>
       </Reveal>
 
+      <Reveal as="section">
+        <div className="section-head">
+          <p className="eyebrow">The exam</p>
+          <h2>
+            Every message is a <em>question</em>
+          </h2>
+          <p>
+            A test mixes scams with real messages, because a good filter has to catch one without blocking the other.
+            These come from our public sample; the real tests stay sealed.
+          </p>
+        </div>
+        <ScanStrip />
+        <div className="scan-caption">
+          <span>Shown with the answer key. Hover to pause.</span>
+          <span>Models never see a sealed test's messages, or its answers.</span>
+        </div>
+      </Reveal>
+
       <section id="results">
         <div className="section-head">
           <p className="eyebrow">Results</p>
@@ -73,55 +93,18 @@ export function Home() {
         {data === null && isConfigured && (
           <div className="panel quiet">
             <p className="state" style={{ padding: 0 }}>
-              No tests have been published yet. <Link to="/publish">Publish the first one</Link>.
+              No tests have been published yet. <Link viewTransition to="/publish">Publish the first one</Link>.
             </p>
           </div>
         )}
         {data && (
           <p className="small" style={{ marginTop: "0.9rem" }}>
-            <Link to={`/sets/${data.set.set_id}`}>About this test, and how to get a model certified on it</Link>
+            <Link viewTransition to={`/sets/${data.set.set_id}`}>About this test, and how to get a model certified on it</Link>
           </p>
         )}
       </section>
 
-      <Reveal as="section">
-        <div className="section-head">
-          <p className="eyebrow">Why you can trust a result</p>
-          <h2>
-            An exam with a <em>proctor</em> in the room
-          </h2>
-          <p>
-            Most scam filters are graded by the companies that sell them. Proctor runs the exam instead, and nobody,
-            including us, can peek at the questions or change the answers.
-          </p>
-        </div>
-        <div className="points">
-          <div>
-            <span className="n">i.</span>
-            <h3>Nobody sees the test</h3>
-            <p>
-              The messages are sealed inside secure hardware. Model makers can't study them in advance, so a good
-              score means the model really spots scams.
-            </p>
-          </div>
-          <div>
-            <span className="n">ii.</span>
-            <h3>Every answer is signed</h3>
-            <p>
-              Each model runs in secure hardware that signs every answer it gives. Answers can't be swapped or
-              edited afterwards.
-            </p>
-          </div>
-          <div>
-            <span className="n">iii.</span>
-            <h3>Anyone can check</h3>
-            <p>
-              Results are recorded on the NEAR blockchain. Every result page has a button that re-checks every
-              signature in your own browser.
-            </p>
-          </div>
-        </div>
-      </Reveal>
+      <ExamStory />
 
       <Reveal as="section">
         <Panel eyebrow="Read results fairly" title="What a result does and doesn't tell you" className="quiet">
@@ -145,10 +128,10 @@ export function Home() {
             of every certification.
           </p>
           <div className="actions">
-            <Link className="btn" to="/publish">
+            <Link viewTransition className="btn" to="/publish">
               Publish a test
             </Link>
-            <Link className="btn secondary" to="/sets">
+            <Link viewTransition className="btn secondary" to="/sets">
               Certify a model
             </Link>
           </div>
@@ -211,7 +194,7 @@ function HeroDeck({ top, setTitle }: { top: Certificate; setTitle?: string }) {
               </p>
               <p className="small muted" style={{ margin: "0.5rem 0 0" }}>
                 Answer sheet from its typical run (run {index + 1} of {top.runs.length}).{" "}
-                <Link to={`/certificates/${top.eval_id}`}>See the full result</Link>
+                <Link viewTransition to={`/certificates/${top.eval_id}`}>See the full result</Link>
               </p>
             </Panel>
           </div>

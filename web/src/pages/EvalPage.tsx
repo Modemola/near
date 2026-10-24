@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Celebrate } from "../components/Celebrate";
 import { Link, useParams } from "react-router-dom";
 import { AccountLink, ErrorNote, Loading, PageHead, Panel, Stat, StatStrip, StatusBadge, useAsync } from "../components/ui";
 import { friendlyError, isCancel } from "../lib/errors";
@@ -11,6 +12,14 @@ const MAX_ATTEMPTS = 3;
 export function EvalPage() {
   const { evalId = "" } = useParams();
   const { data: ev, error, loading } = useAsync(() => proctor.eval(evalId), [evalId], 4000);
+  // Celebrate only when a run finishes while you watch it.
+  const lastStatus = useRef<string | null>(null);
+  const [justCertified, setJustCertified] = useState(false);
+  useEffect(() => {
+    if (!ev) return;
+    if (lastStatus.current === "Running" && ev.status === "Certified") setJustCertified(true);
+    lastStatus.current = ev.status;
+  }, [ev]);
   const { accountId, signIn, call } = useWallet();
   const toasts = useToasts();
 
@@ -19,7 +28,7 @@ export function EvalPage() {
   if (!ev)
     return (
       <PageHead eyebrow="Test run" title="No test run with this number">
-        If you just started one, give it a few seconds and reload. <Link to="/sets">See all tests</Link>.
+        If you just started one, give it a few seconds and reload. <Link viewTransition to="/sets">See all tests</Link>.
       </PageHead>
     );
 
@@ -55,13 +64,14 @@ export function EvalPage() {
 
   return (
     <>
+      <Celebrate show={justCertified} />
       <PageHead eyebrow={`Test run · No. ${ev.id}`} title={ev.model_id}>
-        On <Link to={`/sets/${ev.set_id}`}>{ev.set_id}</Link>, {ev.runs} runs. <StatusBadge status={ev.status} />
+        On <Link viewTransition to={`/sets/${ev.set_id}`}>{ev.set_id}</Link>, {ev.runs} runs. <StatusBadge status={ev.status} />
       </PageHead>
 
       {ev.status === "Certified" && (
         <div className="note good" role="status">
-          <strong>Certified.</strong> All batches were graded and checked. <Link to={`/certificates/${ev.id}`}>See the result</Link>
+          <strong>Certified.</strong> All batches were graded and checked. <Link viewTransition to={`/certificates/${ev.id}`}>See the result</Link>
         </div>
       )}
       {ev.status === "Failed" && (

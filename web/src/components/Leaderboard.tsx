@@ -61,7 +61,9 @@ export function Leaderboard({ certs, setTitle }: { certs: Certificate[]; setTitl
             {i + 1}
           </span>
           <div className="model" role="cell">
-            {c.model_id}
+            <span className="vt-name" style={{ viewTransitionName: `model-${c.eval_id}` } as CSSProperties}>
+              {c.model_id}
+            </span>
             <small>
               {c.runs.length} runs · {c.item_count} messages
             </small>
@@ -86,7 +88,7 @@ export function Leaderboard({ certs, setTitle }: { certs: Certificate[]; setTitl
             <div className="r">{rangeText(c)}</div>
           </div>
           <div className="go" role="cell">
-            <Link className="btn secondary small" to={`/certificates/${c.eval_id}`}>
+            <Link viewTransition className="btn secondary small" to={`/certificates/${c.eval_id}`}>
               See result
             </Link>
           </div>

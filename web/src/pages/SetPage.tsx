@@ -30,7 +30,7 @@ export function SetPage() {
   if (!data?.set)
     return (
       <PageHead eyebrow="Test" title="No test with this id">
-        <Link to="/sets">See all tests</Link>.
+        <Link viewTransition to="/sets">See all tests</Link>.
       </PageHead>
     );
   const { set, certs, models, config } = data;
@@ -272,7 +272,7 @@ function RequestEval({ set, models, config }: { set: TestSet; models: string[]; 
       )}
       <p className="risk">
         A result speaks for this test and this model version only. Only models running in secure hardware are listed,
-        so the test never leaves it. <Link to="/how">How it works</Link>
+        so the test never leaves it. <Link viewTransition to="/how">How it works</Link>
       </p>
     </Panel>
   );

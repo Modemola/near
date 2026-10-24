@@ -58,3 +58,19 @@ Requested direction: richer depth and motion. This replaces the template's
 - **Kept:** one green accent, text contrast, keyboard focus, colour never
   the only signal, and `prefers-reduced-motion` resolves everything to its
   final state (no tilt, no drifting, no count-up).
+
+## Story motion (revision 3)
+
+Motion that tells Proctor's story, each piece tied to what the product does:
+
+- **Message scanner** (landing): public-sample messages glide through a scan
+  line and are stamped Scam or Real from the answer key. Public items only.
+- **How an exam runs** (landing): a pinned, scroll-driven scene in four steps:
+  sealed, asked in secure hardware, signed, checked and stamped on NEAR.
+- **Verification ceremony** (result page): every checked answer flips to a
+  tick (or a cross), then a Verified seal lands. Uses the real counts.
+- **Shared-element page change**: a model's name morphs from its leaderboard
+  row into the result page title (View Transitions API; other browsers get
+  the plain route transition).
+- **Decoding hashes**, **magnetic buttons**, and a **certified moment** (stamp
+  slam and bead burst) when a run finishes while you watch it.

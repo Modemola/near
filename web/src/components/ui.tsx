@@ -1,7 +1,8 @@
+import type React from "react";
 import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { config } from "../lib/config";
 import { friendlyError } from "../lib/errors";
-import { CountUp } from "./motion";
+import { CountUp, useScramble } from "./motion";
 import type { Confusion, EvalStatus } from "../lib/types";
 
 /**
@@ -144,9 +145,12 @@ export function StatusBadge({ status }: { status: EvalStatus }) {
 /** A hash shown in full (wrapping), with a copy button. */
 export function Hash({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
+  const { ref, text } = useScramble(value);
   return (
     <span className="hash">
-      {value}
+      <span ref={ref as React.RefObject<HTMLSpanElement>} aria-label={value}>
+        <span aria-hidden="true">{text}</span>
+      </span>
       <button
         type="button"
         className="copy"

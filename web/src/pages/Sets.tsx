@@ -19,7 +19,7 @@ export function Sets() {
           <Panel
             key={s.set_id}
             eyebrow={s.active ? "Open for certification" : "Retired"}
-            title={<Link to={`/sets/${s.set_id}`}>{s.title}</Link>}
+            title={<Link viewTransition to={`/sets/${s.set_id}`}>{s.title}</Link>}
             serial={s.set_id}
           >
             <p className="small" style={{ color: "var(--ink-secondary)" }}>
@@ -40,7 +40,7 @@ export function Sets() {
               </div>
             </dl>
             <div style={{ marginTop: "1rem" }}>
-              <Link className="btn secondary small" to={`/sets/${s.set_id}`}>
+              <Link viewTransition className="btn secondary small" to={`/sets/${s.set_id}`}>
                 See results
               </Link>
             </div>
@@ -50,7 +50,7 @@ export function Sets() {
       {data?.length === 0 && (
         <div className="panel quiet">
           <p className="state" style={{ padding: 0 }}>
-            No tests have been published yet. <Link to="/publish">Publish the first one</Link>.
+            No tests have been published yet. <Link viewTransition to="/publish">Publish the first one</Link>.
           </p>
         </div>
       )}

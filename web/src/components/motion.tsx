@@ -120,7 +120,20 @@ export function useTilt<T extends HTMLElement>(maxX = 10, maxY = 14, rest = { rx
 export function useAmbientMotion() {
   useEffect(() => {
     let raf = 0;
+    const fine = window.matchMedia("(pointer: fine)").matches && !reducedMotion();
+    let magnet: HTMLElement | null = null;
     const onMove = (e: PointerEvent) => {
+      const btn = fine ? ((e.target as Element | null)?.closest?.(".btn:not(:disabled)") as HTMLElement | null) : null;
+      if (magnet && magnet !== btn) {
+        magnet.style.setProperty("--tx", "0px");
+        magnet.style.setProperty("--ty", "0px");
+      }
+      magnet = btn;
+      if (btn) {
+        const b = btn.getBoundingClientRect();
+        btn.style.setProperty("--tx", `${((e.clientX - b.left - b.width / 2) * 0.22).toFixed(1)}px`);
+        btn.style.setProperty("--ty", `${((e.clientY - b.top - b.height / 2) * 0.3).toFixed(1)}px`);
+      }
       const el = (e.target as Element | null)?.closest?.(".panel, .stat, .points > div") as HTMLElement | null;
       if (!el) return;
       const r = el.getBoundingClientRect();
@@ -196,4 +209,37 @@ export function SealedCube({ label = "A sealed test, readable only inside secure
       </div>
     </div>
   );
+}
+
+const HEX = "0123456789abcdef";
+
+/** Text that decodes from random characters into its real value, left to right. */
+export function useScramble(value: string, ms = 900) {
+  const [text, setText] = useState(() => (reducedMotion() ? value : value.replace(/[0-9a-zA-Z]/g, () => HEX[(Math.random() * 16) | 0])));
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (reducedMotion()) return setText(value);
+    let raf = 0;
+    let start = 0;
+    const tick = (t: number) => {
+      start ||= t;
+      const p = Math.min(1, (t - start) / ms);
+      const fixed = Math.floor(p * value.length);
+      setText(value.slice(0, fixed) + value.slice(fixed).replace(/[0-9a-zA-Z]/g, () => HEX[(Math.random() * 16) | 0]));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        raf = requestAnimationFrame(tick);
+        io.disconnect();
+      }
+    });
+    if (ref.current) io.observe(ref.current);
+    else setText(value);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [value, ms]);
+  return { ref, text };
 }

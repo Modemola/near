@@ -113,7 +113,7 @@ export function HowPage() {
           <Panel className="quiet">
             <p className="small" style={{ margin: 0 }}>
               Read the code, tests and design notes at <a href={config.sourceUrl}>{config.sourceUrl.replace("https://", "")}</a>,
-              or <Link to="/">see the results</Link>.
+              or <Link viewTransition to="/">see the results</Link>.
             </p>
           </Panel>
         </aside>

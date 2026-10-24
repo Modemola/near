@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { medianRun, rangeText } from "../components/Leaderboard";
-import { AnswerSheet, ErrorNote, Hash, Loading, PageHead, Panel, Stat, StatStrip, useAsync } from "../components/ui";
+import { AnswerSheet, ErrorNote, Hash, Loading, PageHead, Panel, Stamp, Stat, StatStrip, useAsync } from "../components/ui";
 import { config } from "../lib/config";
 import { friendlyError } from "../lib/errors";
 import { codeHash, pct, proctor } from "../lib/near";
@@ -32,7 +32,7 @@ export function CertificatePage() {
   if (!data)
     return (
       <PageHead eyebrow="Result" title="No result with this number">
-        It may still be running. <Link to={`/evals/${evalId}`}>Check test run No. {evalId}</Link>.
+        It may still be running. <Link viewTransition to={`/evals/${evalId}`}>Check test run No. {evalId}</Link>.
       </PageHead>
     );
   const { cert, set, model, contractCode } = data;
@@ -43,8 +43,8 @@ export function CertificatePage() {
 
   return (
     <>
-      <PageHead eyebrow={`Certified result · No. ${cert.eval_id}`} title={cert.model_id}>
-        On <Link to={`/sets/${cert.set_id}`}>{set?.title ?? cert.set_id}</Link>: tested {cert.runs.length} times on{" "}
+      <PageHead eyebrow={`Certified result · No. ${cert.eval_id}`} title={<span className="vt-name" style={{ viewTransitionName: `model-${cert.eval_id}` } as CSSProperties}>{cert.model_id}</span>}>
+        On <Link viewTransition to={`/sets/${cert.set_id}`}>{set?.title ?? cert.set_id}</Link>: tested {cert.runs.length} times on{" "}
         {cert.item_count} sealed messages it had never seen.
       </PageHead>
 
@@ -240,6 +240,32 @@ function Verify({ evalId, answers }: { evalId: string; answers: number }) {
         <div className="note critical" role="alert" style={{ margin: "0.9rem 0 0" }}>
           {err} The result above is still recorded on-chain; only this check couldn't run.
         </div>
+      )}
+      {progress && (
+        <div className="vgrid verifying" aria-hidden="true">
+          {Array.from({ length: Math.min(answers, 240) }, (_, k) => (
+            <span className="vb" key={k} style={{ "--k": k % 24 } as CSSProperties} />
+          ))}
+        </div>
+      )}
+      {report && (
+        <>
+          <div className="vgrid" aria-hidden="true">
+            {Array.from({ length: Math.min(report.answersChecked, 240) }, (_, k) => (
+              <span
+                key={k}
+                className={`vb ${k < report.answersValid ? "ok" : "bad"}`}
+                style={{ "--d": `${(k * Math.min(0.03, 1.4 / report.answersChecked)).toFixed(3)}s` } as CSSProperties}
+              />
+            ))}
+          </div>
+          {ok && (
+            <div className="vseal">
+              <Stamp value="Verified" label="in your browser" delay={Math.min(1.6, report.answersChecked * 0.03) + 0.3} />
+              <span className="small muted">Every signature matched the model's registered key.</span>
+            </div>
+          )}
+        </>
       )}
       {report && (
         <div className={`note ${ok ? "good" : "critical"}`} role="status" style={{ margin: "0.9rem 0 0" }}>

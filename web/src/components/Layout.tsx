@@ -38,7 +38,7 @@ export function Layout() {
       <header className="site">
         <div className="wrap">
           <div className="bar-glass">
-            <NavLink to="/" className="brand">
+            <NavLink viewTransition to="/" className="brand">
               <img src="/favicon.svg" alt="" />
               Proctor
             </NavLink>
@@ -48,12 +48,12 @@ export function Layout() {
                 aria-hidden="true"
                 style={{ transform: `translateX(${pill?.x ?? 0}px)`, width: pill?.w ?? 0, opacity: pill ? 1 : 0 }}
               />
-              <NavLink to="/" end>
+              <NavLink viewTransition to="/" end>
                 Results
               </NavLink>
-              <NavLink to="/sets">Tests</NavLink>
-              <NavLink to="/how">How it works</NavLink>
-              <NavLink to="/publish">Publish a test</NavLink>
+              <NavLink viewTransition to="/sets">Tests</NavLink>
+              <NavLink viewTransition to="/how">How it works</NavLink>
+              <NavLink viewTransition to="/publish">Publish a test</NavLink>
             </nav>
             <span className="net" title="NEAR network">
               {config.networkId}

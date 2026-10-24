@@ -110,7 +110,7 @@ export function PublishPage() {
       step(
         "Confirmed",
         <>
-          Published. <Link to={`/sets/${form.set_id}`}>Open your test</Link>
+          Published. <Link viewTransition to={`/sets/${form.set_id}`}>Open your test</Link>
           {hash && (
             <>
               {" · "}
@@ -307,7 +307,7 @@ export function PublishPage() {
             )}
             {registered && (
               <div className="note good" role="status" style={{ margin: "0.9rem 0 0" }}>
-                Published. <Link to={`/sets/${registered}`}>Open your test</Link>
+                Published. <Link viewTransition to={`/sets/${registered}`}>Open your test</Link>
               </div>
             )}
             {err && (
