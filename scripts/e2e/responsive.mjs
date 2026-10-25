@@ -23,7 +23,7 @@ const DEVICES = [
   ["ipad-mini", 768, 1024, true], ["ipad-land", 1024, 768, true], ["ipad-pro", 1024, 1366, true],
   ["laptop-720", 1280, 720, false], ["laptop", 1366, 768, false], ["desktop", 1440, 900, false], ["fhd", 1920, 1080, false], ["qhd", 2560, 1440, false],
 ].filter(([n]) => !ONLY || ONLY.split(",").includes(n));
-const PAGES = ["/", "/sets", "/sets/e2e-scams", "/evals/0", "/certificates/0", "/publish", "/how", "/nowhere"];
+const PAGES = process.env.PAGES ? process.env.PAGES.split(",") : ["/", "/sets", "/sets/e2e-scams", "/evals/0", "/certificates/0", "/publish", "/how", "/nowhere"];
 const slug = (p) => (p === "/" ? "home" : p.slice(1).replace(/\//g, "_"));
 
 const browser = await chromium.launch({
@@ -126,7 +126,7 @@ async function storyAt(page, f) {
     if (!s) return null;
     const top = s.getBoundingClientRect().top + scrollY;
     window.scrollTo({ top: top + (s.offsetHeight - innerHeight) * f, behavior: "instant" });
-    await new Promise((r) => setTimeout(r, 900));
+    await new Promise((r) => setTimeout(r, 1700));
     const hdr = document.querySelector("header.site .bar-glass").getBoundingClientRect();
     const t = document.querySelector(".story-text").getBoundingClientRect();
     const st = document.querySelector(".stage").getBoundingClientRect();
@@ -143,6 +143,21 @@ async function storyAt(page, f) {
       if (parseFloat(getComputedStyle(el).opacity) < 0.05 || r.width < 2) continue;
       if (r.left < st.left - 4 || r.right > st.right + 4 || r.top < st.top - 14 || r.bottom > st.bottom + 4) problems.push(`${el.className} leaves the stage`);
     }
+    // The pieces of the scene must not cover each other.
+    const box = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el || parseFloat(getComputedStyle(el).opacity) < 0.05) return null;
+      const r = el.getBoundingClientRect();
+      return r.width > 2 ? r : null;
+    };
+    for (const [a, b] of [[".near-block", ".st-stamp"], [".lane", ".near-block"], [".st-stamp", ".tee-frame"], [".st-stamp", ".model-chip"], [".st-cube .cube-scene", ".model-chip"], [".near-block", ".tee-frame"]]) {
+      const ra = box(a), rb = box(b);
+      if (ra && rb && hit(ra, rb)) problems.push(`${a} covers ${b}`);
+    }
+    // The model runs in the secure hardware, so its chip stays inside the frame.
+    const chip = box(".model-chip"), frame = box(".tee-frame");
+    if (chip && frame && (chip.right > frame.right + 1 || chip.left < frame.left - 1 || chip.top < frame.top - 1 || chip.bottom > frame.bottom + 1))
+      problems.push("the AI model chip crosses the secure-hardware frame");
     return { step: s.dataset.step, problems };
   }, f);
 }

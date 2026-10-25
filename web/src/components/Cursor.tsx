@@ -19,6 +19,9 @@ export function Cursor() {
     if (!fine || still || !dot.current || !ring.current) return;
     const root = document.documentElement;
     root.classList.add("has-cursor");
+    // Hidden until the mouse first moves, then it appears where the mouse is.
+    root.classList.add("cursor-out");
+    let seen = false;
     let x = innerWidth / 2;
     let y = innerHeight / 2;
     let rx = x;
@@ -34,6 +37,11 @@ export function Cursor() {
     const move = (e: PointerEvent) => {
       x = e.clientX;
       y = e.clientY;
+      if (!seen) {
+        seen = true;
+        rx = x;
+        ry = y;
+      }
       dot.current!.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       root.classList.remove("cursor-out");
       const t = e.target as Element;
