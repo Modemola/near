@@ -17,7 +17,7 @@ export async function render(path: string): Promise<string> {
   return renderToString(
     <StrictMode>
       <WalletProvider>
-        <StaticRouterProvider router={router} context={context} />
+        <StaticRouterProvider router={router} context={context} hydrate={false} />
       </WalletProvider>
     </StrictMode>,
   );

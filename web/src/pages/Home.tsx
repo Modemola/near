@@ -242,8 +242,8 @@ function CheckIt({ top, setTitle }: { top: Certificate; setTitle?: string }) {
               <p className="eyebrow">What just happened</p>
               <ol className="explain-steps">
                 <li>
-                  <strong>Read from NEAR, not from us.</strong> Your browser found the {report.chunks.length} transactions
-                  that delivered these answers, on a public NEAR node.
+                  <strong>Read from NEAR, not from us.</strong> Your browser found all {report.chunks.length} batches of
+                  these answers in NEAR's own records, on a public NEAR node.
                 </li>
                 <li>
                   <strong>Checked {report.answersChecked} signatures.</strong> Each answer is signed together with its

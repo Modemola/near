@@ -1,10 +1,8 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { Layout } from "./components/Layout";
-import { ToastProvider } from "./lib/toasts";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { createBrowserRouter, matchRoutes, RouterProvider } from "react-router-dom";
 import { WalletProvider } from "./lib/wallet";
-import { Home } from "./pages/Home";
+import { routes } from "./routes";
 // Fonts ship with the site (no render-blocking request to another server),
 // only the weights and Latin subsets the design uses.
 import "@fontsource/fraunces/latin-300.css";
@@ -19,33 +17,32 @@ import "@fontsource/geist-mono/latin-500.css";
 import "./styles.css";
 
 // A data router, so links can use the View Transitions API.
-const router = createBrowserRouter([
-  {
-    // Notifications live inside the router: their messages contain links.
-    element: (
-      <ToastProvider>
-        <Layout />
-      </ToastProvider>
-    ),
-    children: [
-      // The landing page ships with the app; every other page loads its own
-      // code when it's first visited.
-      { index: true, element: <Home /> },
-      { path: "sets", lazy: async () => ({ Component: (await import("./pages/Sets")).Sets }) },
-      { path: "sets/:setId", lazy: async () => ({ Component: (await import("./pages/SetPage")).SetPage }) },
-      { path: "evals/:evalId", lazy: async () => ({ Component: (await import("./pages/EvalPage")).EvalPage }) },
-      { path: "certificates/:evalId", lazy: async () => ({ Component: (await import("./pages/CertificatePage")).CertificatePage }) },
-      { path: "publish", lazy: async () => ({ Component: (await import("./pages/PublishPage")).PublishPage }) },
-      { path: "how", lazy: async () => ({ Component: (await import("./pages/HowPage")).HowPage }) },
-      { path: "*", lazy: async () => ({ Component: (await import("./pages/NotFound")).NotFound }) },
-    ],
-  },
-]);
-
-createRoot(document.getElementById("root")!).render(
+const app = (router: ReturnType<typeof createBrowserRouter>) => (
   <StrictMode>
     <WalletProvider>
       <RouterProvider router={router} />
     </WalletProvider>
-  </StrictMode>,
+  </StrictMode>
 );
+
+const root = document.getElementById("root")!;
+if (root.firstElementChild) {
+  // Pre-rendered at build time (scripts/prerender.mjs): load this page's code
+  // first so the first render matches the HTML, then attach to it in place.
+  const lazy = matchRoutes(routes, window.location)?.filter((m) => m.route.lazy) ?? [];
+  Promise.all(
+    lazy.map(async (m) => Object.assign(m.route, { ...(await m.route.lazy!()), lazy: undefined })),
+  ).then(() =>
+    hydrateRoot(root, app(createBrowserRouter(routes)), {
+      // A mismatch (for example a setting that only the browser knows) is
+      // repaired by React re-rendering; only worth a note while developing.
+      // Kept on window too, so the build checks can confirm there were none.
+      onRecoverableError: (e) => {
+        ((window as unknown as { __hydrationErrors?: unknown[] }).__hydrationErrors ??= []).push(String(e));
+        if (import.meta.env.DEV) console.warn(e);
+      },
+    }),
+  );
+} else {
+  createRoot(root).render(app(createBrowserRouter(routes)));
+}

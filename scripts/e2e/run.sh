@@ -58,7 +58,7 @@ fi
 # AUDIT=<dir>: also audit the UI on the data the browser test created, with a
 # production build for load metrics.
 if [ -n "$AUDIT" ]; then
-  (cd "$REPO/web" && "$VITE_BIN" build --mode e2e --outDir "$WORK/dist" >"$WORK/build.log" 2>&1)
+  (cd "$REPO/web" && "$VITE_BIN" build --mode e2e --outDir "$WORK/dist" >"$WORK/build.log" 2>&1 && node scripts/prerender.mjs --mode e2e --outDir "$WORK/dist" >>"$WORK/build.log" 2>&1)
   (cd "$REPO/web" && exec "$VITE_BIN" preview --mode e2e --outDir "$WORK/dist" --port 5175 --strictPort >"$WORK/preview.log" 2>&1) &
   PREVIEW=$!
   for _ in $(seq 1 30); do curl -s -o /dev/null http://localhost:5175/ && break; sleep 1; done

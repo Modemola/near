@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { reducedMotion, SealedCube } from "./motion";
 
 const STEPS = [
@@ -8,6 +8,8 @@ const STEPS = [
   { title: "NEAR checks and records it", text: "The contract checks every signature, then stamps the result on-chain for good." },
 ];
 
+const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 const TOO_SHORT = "(max-width: 860px) and (max-height: 759px), (min-width: 861px) and (max-height: 619px)";
 
 /** A pinned scene that plays the exam as you scroll through it. */
@@ -16,11 +18,14 @@ export function ExamStory() {
   const [step, setStep] = useState(0);
   // Pinned only when the whole scene fits below the header; on short screens
   // (phones held sideways, small phones) it lays out as a plain section instead.
-  const [still, setStill] = useState(() => reducedMotion() || matchMedia(TOO_SHORT).matches);
-  useEffect(() => {
-    if (reducedMotion()) return;
+  // Decided before the first paint, not during render, so the pre-rendered HTML
+  // and the browser's first render match.
+  const [still, setStill] = useState(false);
+  useIsoLayoutEffect(() => {
+    if (reducedMotion()) return setStill(true);
     const mq = matchMedia(TOO_SHORT);
     const change = () => setStill(mq.matches);
+    change();
     mq.addEventListener("change", change);
     return () => mq.removeEventListener("change", change);
   }, []);

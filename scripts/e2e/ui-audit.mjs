@@ -20,7 +20,7 @@ try {
 const AXE = readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
 const PAGES = ["/", "/sets", "/sets/e2e-scams", "/evals/0", "/certificates/0", "/publish", "/how", "/nowhere"];
 const WIDTHS = [320, 375, 390, 768, 1024, 1440, 1920];
-const report = { axe: {}, keyboard: {}, layout: {}, reducedMotion: {}, offline: {}, copy: {}, meta: {}, metrics: {} };
+const report = { axe: {}, keyboard: {}, layout: {}, reducedMotion: {}, offline: {}, copy: {}, meta: {}, metrics: {}, prerender: {} };
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROME ?? "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
@@ -253,6 +253,35 @@ for (const path of ["/", "/certificates/0", "/how"]) {
   }
 }
 
+// ---- 9. pre-rendered pages: React attaches to the HTML instead of redrawing it ------
+for (const motion of ["no-preference", "reduce"]) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: motion });
+  await ctx.addInitScript(() =>
+    document.addEventListener("DOMContentLoaded", () => {
+      window.__firstH1 = document.querySelector("#root h1");
+      window.__pre = !!document.querySelector("#root")?.firstElementChild;
+    }),
+  );
+  for (const path of ["/", "/sets", "/publish", "/how", "/certificates/0"]) {
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("console", (m) => m.type() === "error" && errors.push(m.text().slice(0, 100)));
+    page.on("pageerror", (e) => errors.push(String(e).slice(0, 100)));
+    await page.goto(PROD + path, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1500);
+    report.prerender[`${path} motion ${motion}`] = {
+      ...(await page.evaluate(() => ({
+        prerendered: window.__pre,
+        reused: window.__firstH1 ? window.__firstH1 === document.querySelector("#root h1") : null,
+        hydrationErrors: window.__hydrationErrors ?? [],
+      }))),
+      errors,
+    };
+    await page.close();
+  }
+  await ctx.close();
+}
+
 await browser.close();
 writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 2));
 
@@ -265,6 +294,7 @@ for (const [k, v] of Object.entries(report.layout)) if (v.overflow || v.clipped.
 for (const [k, v] of Object.entries(report.reducedMotion)) if (v.runningAnimations || v.customCursor || v.smoothScroll) lines.push(`reduced motion ${k}: ${v.runningAnimations} running (${v.examples.join(", ")}) cursor=${v.customCursor} lenis=${v.smoothScroll}`);
 for (const [k, v] of Object.entries(report.offline)) lines.push(`offline ${k}: ${v.blank ? "BLANK " : ""}${v.stuckLoading ? "STUCK LOADING " : ""}says "${v.says}"`);
 for (const [k, v] of Object.entries(report.copy)) if (v.emDashes || v.hype.length || v.jargon.length || v.doubleSpaces || v.emoji) lines.push(`copy ${k}: em-dashes ${v.emDashes}, hype ${v.hype.join("/") || "-"}, jargon ${v.jargon.join("/") || "-"}, double spaces ${v.doubleSpaces}, emoji ${v.emoji}`);
+for (const [k, v] of Object.entries(report.prerender)) lines.push(`prerender ${k}: ${v.prerendered ? "pre-rendered" : "rendered in browser"}${v.reused === false ? ", REDRAWN" : v.reused ? ", reused" : ""}, hydration errors ${v.hydrationErrors.length}${v.errors.length ? ", console: " + v.errors.join(" | ") : ""}`);
 for (const [k, v] of Object.entries(report.meta)) lines.push(`meta ${k}: title "${v.title}", lang ${v.lang || "MISSING"}, h1 ${v.h1s}, img without alt ${v.imgsNoAlt}`);
 for (const [k, v] of Object.entries(report.metrics)) lines.push(`metrics ${k}: load ${v.loadMs}ms, LCP ${v.lcpMs}ms, CLS ${v.cls}, long tasks ${v.longTasks}, JS ${v.jsKB}KB, ${v.requests} requests`);
 writeFileSync(`${OUT}/summary.txt`, lines.join("\n"));
