@@ -3,6 +3,7 @@ import { Leaderboard, latestPerModel, medianRun, plainCounts } from "../componen
 import { Bento } from "../components/Bento";
 import { ExamStory } from "../components/ExamStory";
 import { Reveal, useTilt } from "../components/motion";
+import { VerifyPanel } from "../components/VerifyPanel";
 import { ScanStrip } from "../components/ScanStrip";
 import { AnswerSheet, Panel, Stamp, Unavailable, useAsync, Words, useTitle, Loading } from "../components/ui";
 import { isConfigured } from "../lib/config";
@@ -37,13 +38,15 @@ export function Home() {
             <a className="btn" href="#results">
               See the results
             </a>
-            <Link viewTransition className="btn secondary" to="/how">
-              How it stays fair
-            </Link>
+            <a className="btn secondary" href="#verify">
+              Check a result yourself
+            </a>
           </div>
         </div>
         <HeroResult top={top} loading={loading} error={error} setTitle={data?.set.title} />
       </section>
+
+      {top && <CheckIt top={top} setTitle={data?.set.title} />}
 
       <section>
         <Bento set={data?.set} rows={rows} loading={loading} />
@@ -194,5 +197,68 @@ function HeroDeck({ top, setTitle }: { top: Certificate; setTitle?: string }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** The top result as a claim next to the check that proves it, run in the visitor's own browser. */
+function CheckIt({ top, setTitle }: { top: Certificate; setTitle?: string }) {
+  const answers = top.item_count * top.runs.length;
+  return (
+    <section id="verify" className="check-it">
+      <div className="section-head">
+        <p className="eyebrow">Don't take our word for it</p>
+        <h2>
+          Check this result <em>yourself</em>
+        </h2>
+        <p>
+          Every answer behind a result was signed inside the model's secure hardware and recorded on NEAR. Your browser
+          can fetch them and check every signature, with no account, no wallet and nothing from our servers.
+        </p>
+      </div>
+      <div className="check-grid">
+        <div className="panel quiet claim">
+          <p className="eyebrow">The claim</p>
+          <p className="claim-score">{pct(top.accuracy_bps)}</p>
+          <p className="claim-what">
+            <strong>{top.model_id}</strong> was asked every message in {setTitle ?? "the test"}, {top.runs.length}{" "}
+            times over, and on average judged this share of them correctly.
+          </p>
+          <p className="small" style={{ margin: 0 }}>
+            <Link viewTransition to={`/certificates/${top.eval_id}`}>See the certificate</Link>
+          </p>
+        </div>
+        <VerifyPanel
+          evalId={top.eval_id}
+          answers={answers}
+          title="The check"
+          intro={
+            <>
+              Fetches the {answers} signed answers from a public NEAR node, checks each signature against the model's
+              key, and adds them up. About a minute; nothing to install.
+            </>
+          }
+          explain={(report) => (
+            <>
+              <p className="eyebrow">What just happened</p>
+              <ol className="explain-steps">
+                <li>
+                  <strong>Read from NEAR, not from us.</strong> Your browser found the {report.chunks.length} transactions
+                  that delivered these answers, on a public NEAR node.
+                </li>
+                <li>
+                  <strong>Checked {report.answersChecked} signatures.</strong> Each answer is signed together with its
+                  exact question, by a key made inside the model's secure hardware. Change one word and the signature
+                  fails.
+                </li>
+                <li>
+                  <strong>Added them up.</strong> The checked answers give exactly the figures on the certificate:{" "}
+                  {pct(top.accuracy_bps)} overall.
+                </li>
+              </ol>
+            </>
+          )}
+        />
+      </div>
+    </section>
   );
 }

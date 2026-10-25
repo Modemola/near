@@ -982,3 +982,16 @@ a { color: var(--link); }
   .account-btn { max-width: 150px; }
 }
 
+/* ---------- Home: the claim next to the check ---------- */
+section[id] { scroll-margin-top: calc(var(--hdr-bottom, 80px) + 16px); }
+.check-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.4rem; align-items: start; }
+@media (min-width: 920px) { .check-grid { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 2rem; } }
+.claim { display: grid; gap: 0.6rem; }
+.claim .eyebrow { margin: 0; }
+.claim-score { margin: 0; font: 300 clamp(3rem, 8vw, 4.6rem)/1 var(--display); letter-spacing: -0.02em; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
+.claim-what { margin: 0; color: var(--ink-secondary); }
+.claim-what strong { color: var(--ink); font-weight: 500; overflow-wrap: anywhere; }
+.verify-explain { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--hairline); }
+.verify-explain .eyebrow { margin: 0 0 0.6rem; }
+.explain-steps { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.6rem; color: var(--ink-secondary); font-size: 0.92rem; }
+.explain-steps strong { color: var(--ink); font-weight: 500; }

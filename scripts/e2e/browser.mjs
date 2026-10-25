@@ -160,7 +160,7 @@ await step("Certificate: run switcher, copy link and print work", async () => {
 await step("Verify: every signature checks out and adds up to the certificate, from plain RPC", async () => {
   await page.getByRole("button", { name: "Check every signature" }).click();
   await expectText("answers check out", 90000);
-  await expectText("add up to every number on this certificate");
+  await expectText("add up to every number on the certificate");
   const bad = await page.locator(".note.critical").count();
   if (bad) throw new Error("a verification problem was reported");
 });
@@ -171,6 +171,18 @@ await step("Home: leaderboard and bento show the result; clicking the row opens 
   await expectText("e2e/careful-model");
   await page.getByRole("link", { name: "See result" }).first().click();
   await page.waitForURL(/\/certificates\/0$/);
+});
+
+await step("Home: one click checks the top result in the browser and says what happened", async () => {
+  await go("/");
+  await page.getByRole("link", { name: "Check a result yourself" }).click();
+  const check = page.locator("#verify");
+  await check.getByRole("button", { name: "Check every signature" }).click();
+  await expectText("What just happened", 90000);
+  await expectText("Checked 40 signatures");
+  if (await check.locator(".note.critical").count()) throw new Error("a verification problem was reported");
+  await check.getByRole("link", { name: "See the certificate" }).click();
+  await page.waitForURL("**/certificates/0");
 });
 
 await step("Cap: the second certification is allowed and counted", async () => {
