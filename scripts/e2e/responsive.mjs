@@ -99,8 +99,18 @@ function inspect() {
   }
   // 3b. Decoration is allowed to overlap content, but not to be cut off by the screen edge.
   for (const el of document.querySelectorAll(".deck .ghost, .float-stamp, .stamp, .st-stamp, .foil, .cert-watermark, .vault, .cube-scene")) {
-    const r = el.getBoundingClientRect();
     if (!visible(el) || inClosed(el)) continue;
+    // What is actually drawn: clipped by any ancestor that hides its overflow.
+    const b = el.getBoundingClientRect();
+    const r = { left: b.left, right: b.right };
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX !== "visible") {
+        const pr = p.getBoundingClientRect();
+        r.left = Math.max(r.left, pr.left);
+        r.right = Math.min(r.right, pr.right);
+      }
+    }
     if (r.right > vw + 1 || r.left < -1) out.edges.push(`decoration ${describe(el)} cut off by the screen edge (${Math.round(r.left)}..${Math.round(r.right)} of ${vw})`);
   }
   // 4. Text spilling out of its own box (no scroll, no ellipsis).
