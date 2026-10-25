@@ -113,6 +113,19 @@ function inspect() {
     }
     if (r.right > vw + 1 || r.left < -1) out.edges.push(`decoration ${describe(el)} cut off by the screen edge (${Math.round(r.left)}..${Math.round(r.right)} of ${vw})`);
   }
+  // 3c. Header items stay on one line; the account name shows in full from tablet width up.
+  for (const el of document.querySelectorAll("header.site .net, header.site .chip-pop > summary, nav.main a, .account-btn, .brand")) {
+    if (!visible(el)) continue;
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.3;
+    const text = [...el.querySelectorAll("*"), el].map((n) => n.getClientRects().length).reduce((a, b) => Math.max(a, b), 0);
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const lines = new Set([...range.getClientRects()].filter((r) => r.width > 1).map((r) => Math.round(r.top / (lh * 0.8))));
+    if (lines.size > 1 && text) out.spills.push(`${describe(el)} wraps onto ${lines.size} lines`);
+  }
+  if (vw > 900) for (const el of document.querySelectorAll(".account-btn span, .account-btn")) {
+    if (visible(el) && el.scrollWidth > el.clientWidth + 1) { out.spills.push(`${describe(el)} is cut short`); break; }
+  }
   // 4. Text spilling out of its own box (no scroll, no ellipsis).
   for (const el of document.querySelectorAll("body *")) {
     if (!visible(el) || isDecor(el) || inClosed(el) || el.closest(SCROLLERS)) continue;

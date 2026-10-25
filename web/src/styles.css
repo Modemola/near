@@ -175,7 +175,7 @@ nav.main { position: relative; display: flex; gap: 0.25rem; flex: 1; }
 nav.main a { position: relative; z-index: 1; color: var(--ink-muted); text-decoration: none; font-size: 0.93rem; padding: 0.45rem 0.85rem; border-radius: 999px; white-space: nowrap; transition: color 0.35s var(--ease); }
 nav.main a:hover, nav.main a.active { color: var(--ink); }
 .nav-pill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 999px; background: var(--neu-face); box-shadow: var(--neu-in); transition: transform 0.55s var(--spring), width 0.55s var(--spring), opacity 0.3s; pointer-events: none; }
-.net { font: 500 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); padding: 0.5rem 0.65rem; border-radius: 999px; box-shadow: var(--neu-in); }
+.net { white-space: nowrap; font: 500 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-muted); padding: 0.5rem 0.65rem; border-radius: 999px; box-shadow: var(--neu-in); }
 .net::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--good); margin-right: 0.45rem; vertical-align: 1px; box-shadow: 0 0 8px var(--good); animation: blink 2.4s ease-in-out infinite; }
 @media (max-width: 900px) {
   header.site { padding: 8px 0; }
@@ -417,7 +417,7 @@ dl.facts dd .small { margin-top: 0.3rem; }
 .deck .float-stamp .stamp { position: relative; right: auto; top: auto; }
 .deck .shadow { position: absolute; left: 8%; right: 8%; bottom: -46px; height: 40px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,0.25), transparent); transform: translateZ(-160px) rotateX(90deg); filter: blur(6px); }
 /* Where the card reaches the screen's gutter, the stamp sits on its corner instead of hanging past it. */
-@media (max-width: 1180px) { .deck .float-stamp { right: 6px; } }
+@media (max-width: 1180px) { .deck .float-stamp { right: 14px; } }
 @media (max-width: 520px) { .deck .float-stamp { right: 4px; top: -44px; } .deck .float-stamp .stamp { width: 88px; height: 88px; margin: 0; } .deck .float-stamp .stamp b { font-size: 1.25rem; } }
 
 /* The sealed box: a slowly turning glass cube with the test glowing inside. */
@@ -908,7 +908,10 @@ main:focus { outline: none; }
 /* Outlines inside clipping boxes are drawn inside so they stay visible. */
 details.more > summary:focus-visible, .cert :focus-visible, .board-row :focus-visible { outline-offset: -3px; }
 /* Long account names in the header end with an ellipsis. */
-.account-btn { max-width: 190px; }
+.account-btn { max-width: 190px; flex-shrink: 0; }
+/* The header stops growing at the page width, so the notice chips keep their
+   short labels everywhere; the full story is one tap away in their popups. */
+.chip-pop .short-hide { display: none; }
 .account-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 /* The phone menu fades at its edge to show it scrolls. */
 @media (max-width: 760px) {
@@ -948,7 +951,6 @@ details.more > summary:focus-visible, .cert :focus-visible, .board-row :focus-vi
 .chip-pop .pop p { margin: 0; }
 @media (max-width: 900px) {
   .chip-pop > summary { padding: 0.45rem 0.55rem; letter-spacing: 0.1em; }
-  .chip-pop .short-hide { display: none; }
   .chip-pop .pop { position: fixed; left: 16px; right: 16px; top: calc(var(--hdr-bottom, 150px) + 8px); width: auto; max-width: 460px; margin-left: auto; max-height: calc(100dvh - var(--hdr-bottom, 150px) - 24px); overflow-y: auto; }
 }
 
@@ -973,9 +975,8 @@ a { color: var(--link); }
 }
 
 /* Tablets and small laptops: fewer, shorter header items so nothing is pushed off. */
-@media (min-width: 901px) and (max-width: 1180px) {
+@media (min-width: 901px) and (max-width: 1380px) {
   header.site .net { display: none; }
-  .chip-pop .short-hide { display: none; }
   nav.main { gap: 0; }
   nav.main a { padding: 0.45rem 0.6rem; }
   .account-btn { max-width: 150px; }
