@@ -232,6 +232,15 @@ for (const [name, w, h, touch] of DEVICES) {
       const mp = await mctx.newPage();
       await mp.goto(BASE + path, { waitUntil: "networkidle" }).catch(() => {});
       await mp.waitForTimeout(1000);
+      // Judge the layout people settle on: let one-off entrance animations finish
+      // (a stamp landing, cards fanning out); endless loops don't count.
+      await mp
+        .waitForFunction(
+          () => document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getTiming().iterations !== Infinity).length === 0,
+          null,
+          { timeout: 8000 },
+        )
+        .catch(() => {});
       const pinned = await mp.evaluate(() => !document.querySelector(".story")?.classList.contains("still"));
       r.storyMode = pinned ? "pinned" : "still";
       if (pinned) {

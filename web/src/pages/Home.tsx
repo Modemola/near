@@ -46,7 +46,8 @@ export function Home() {
         <HeroResult top={top} loading={loading} error={error} setTitle={data?.set.title} />
       </section>
 
-      {top && <CheckIt top={top} setTitle={data?.set.title} />}
+      {/* Shown while loading too, at its usual size, so nothing below it moves when the result arrives. */}
+      {(loading || top) && <CheckIt top={top} setTitle={data?.set.title} />}
 
       <section>
         <Bento set={data?.set} rows={rows} loading={loading} />
@@ -201,8 +202,8 @@ function HeroDeck({ top, setTitle }: { top: Certificate; setTitle?: string }) {
 }
 
 /** The top result as a claim next to the check that proves it, run in the visitor's own browser. */
-function CheckIt({ top, setTitle }: { top: Certificate; setTitle?: string }) {
-  const answers = top.item_count * top.runs.length;
+function CheckIt({ top, setTitle }: { top?: Certificate; setTitle?: string }) {
+  const answers = top ? top.item_count * top.runs.length : 0;
   return (
     <section id="verify" className="check-it">
       <div className="section-head">
@@ -215,50 +216,57 @@ function CheckIt({ top, setTitle }: { top: Certificate; setTitle?: string }) {
           can fetch them and check every signature, with no account, no wallet and nothing from our servers.
         </p>
       </div>
-      <div className="check-grid">
-        <div className="panel quiet claim">
-          <p className="eyebrow">The claim</p>
-          <p className="claim-score">{pct(top.accuracy_bps)}</p>
-          <p className="claim-what">
-            <strong>{top.model_id}</strong> was asked every message in {setTitle ?? "the test"}, {top.runs.length}{" "}
-            times over, and on average judged this share of them correctly.
-          </p>
-          <p className="small" style={{ margin: 0 }}>
-            <Link viewTransition to={`/certificates/${top.eval_id}`}>See the certificate</Link>
-          </p>
+      {!top ? (
+        <div className="check-grid" role="status" aria-label="Loading the latest result…">
+          <div className="skeleton check-skel-claim" />
+          <div className="skeleton check-skel-check" />
         </div>
-        <VerifyPanel
-          evalId={top.eval_id}
-          answers={answers}
-          title="The check"
-          intro={
-            <>
-              Fetches the {answers} signed answers from a public NEAR node, checks each signature against the model's
-              key, and adds them up. About a minute; nothing to install.
-            </>
-          }
-          explain={(report) => (
-            <>
-              <p className="eyebrow">What just happened</p>
-              <ol className="explain-steps">
-                <li>
-                  <strong>Read from NEAR, not from us.</strong> Your browser found all {report.chunks.length} batches of
-                  these answers in NEAR's own records, on a public NEAR node.
-                </li>
-                <li>
-                  <strong>Checked {report.answersChecked} signatures.</strong> Each answer is signed together with its
-                  exact question, by a key made inside the model's secure hardware. Change one word and the signature
-                  fails.
-                </li>
-                <li>
-                  <strong>Added them up.</strong> The checked answers give exactly the figures on the certificate:{" "}
-                  {pct(top.accuracy_bps)} overall.
-                </li>
-              </ol>
-            </>
-          )}
-        />
-      </div>
+      ) : (
+        <div className="check-grid">
+          <div className="panel quiet claim">
+            <p className="eyebrow">The claim</p>
+            <p className="claim-score">{pct(top.accuracy_bps)}</p>
+            <p className="claim-what">
+              <strong>{top.model_id}</strong> was asked every message in {setTitle ?? "the test"}, {top.runs.length}{" "}
+              times over, and on average judged this share of them correctly.
+            </p>
+            <p className="small" style={{ margin: 0 }}>
+              <Link viewTransition to={`/certificates/${top.eval_id}`}>See the certificate</Link>
+            </p>
+          </div>
+          <VerifyPanel
+            evalId={top.eval_id}
+            answers={answers}
+            title="The check"
+            intro={
+              <>
+                Fetches the {answers} signed answers from a public NEAR node, checks each signature against the model's
+                key, and adds them up. About a minute; nothing to install.
+              </>
+            }
+            explain={(report) => (
+              <>
+                <p className="eyebrow">What just happened</p>
+                <ol className="explain-steps">
+                  <li>
+                    <strong>Read from NEAR, not from us.</strong> Your browser found all {report.chunks.length} batches of
+                    these answers in NEAR's own records, on a public NEAR node.
+                  </li>
+                  <li>
+                    <strong>Checked {report.answersChecked} signatures.</strong> Each answer is signed together with its
+                    exact question, by a key made inside the model's secure hardware. Change one word and the signature
+                    fails.
+                  </li>
+                  <li>
+                    <strong>Added them up.</strong> The checked answers give exactly the figures on the certificate:{" "}
+                    {pct(top.accuracy_bps)} overall.
+                  </li>
+                </ol>
+              </>
+            )}
+          />
+        </div>
+      )}
     </section>
   );
 }

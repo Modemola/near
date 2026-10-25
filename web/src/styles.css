@@ -987,6 +987,8 @@ section[id] { scroll-margin-top: calc(var(--hdr-bottom, 80px) + 16px); }
 .check-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.4rem; align-items: start; }
 @media (min-width: 920px) { .check-grid { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 2rem; } }
 .claim { display: grid; gap: 0.6rem; }
+.check-skel-claim { height: 262px; }
+.check-skel-check { height: 300px; }
 .claim .eyebrow { margin: 0; }
 .claim-score { margin: 0; font: 300 clamp(3rem, 8vw, 4.6rem)/1 var(--display); letter-spacing: -0.02em; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
 .claim-what { margin: 0; color: var(--ink-secondary); }
