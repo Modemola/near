@@ -19,7 +19,7 @@ try {
 
 const DEVICES = [
   ["fold", 280, 653, true], ["se", 320, 568, true], ["mini", 375, 667, true], ["iphone", 390, 844, true], ["pixel", 412, 915, true],
-  ["se-land", 568, 320, true], ["phone-land", 844, 390, true],
+  ["se-land", 568, 320, true], ["phone-land", 844, 390, true], ["zoom-200", 640, 360, false],
   ["ipad-mini", 768, 1024, true], ["ipad-land", 1024, 768, true], ["ipad-pro", 1024, 1366, true],
   ["laptop-720", 1280, 720, false], ["laptop", 1366, 768, false], ["desktop", 1440, 900, false], ["fhd", 1920, 1080, false], ["qhd", 2560, 1440, false],
 ].filter(([n]) => !ONLY || ONLY.split(",").includes(n));
@@ -103,6 +103,11 @@ function inspect() {
       if (out.spills.length > 10) break;
     }
   }
+  for (const el of document.querySelectorAll(".split > aside")) {
+    const cs = getComputedStyle(el);
+    if (cs.position === "sticky" && el.getBoundingClientRect().height > innerHeight - parseFloat(cs.top) - 4)
+      out.overlaps.push(`pinned sidebar is taller than the screen (${Math.round(el.getBoundingClientRect().height)}px)`);
+  }
   out.overflowX = document.documentElement.scrollWidth > vw + 1;
   return out;
 }
@@ -157,13 +162,14 @@ for (const [name, w, h, touch] of DEVICES) {
       const pop = await page.evaluate(() => {
         const p = [...document.querySelectorAll(".chip-pop[open] .pop")][0];
         if (!p) return null;
+        const which = p.closest(".chip-pop").querySelector("summary").textContent.trim();
         const r = p.getBoundingClientRect();
         const hdr = document.querySelector("header.site .bar-glass").getBoundingClientRect();
         const issues = [];
         if (r.left < 0 || r.right > document.documentElement.clientWidth) issues.push(`popup off screen (${Math.round(r.left)}..${Math.round(r.right)})`);
         if (r.bottom > innerHeight) issues.push("popup runs off the bottom");
         if (r.top < hdr.bottom - 2 && r.left < hdr.right) issues.push("popup covers the header");
-        return issues;
+        return issues.map((i) => `${which} ${i}`);
       });
       if (pop?.length) r.overlaps.push(...pop);
       await page.keyboard.press("Escape").catch(() => {});
@@ -171,10 +177,24 @@ for (const [name, w, h, touch] of DEVICES) {
     }
     if (path === "/") {
       r.story = [];
-      for (const f of [0.05, 0.3, 0.55, 0.85]) {
-        const s = await storyAt(page, f);
-        if (s && s.problems.length) r.story.push(`step ${s.step}: ${s.problems.join("; ")}`);
+      const mctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch && w < 1000 });
+      const mp = await mctx.newPage();
+      await mp.goto(BASE + path, { waitUntil: "networkidle" }).catch(() => {});
+      await mp.waitForTimeout(1000);
+      const pinned = await mp.evaluate(() => !document.querySelector(".story")?.classList.contains("still"));
+      r.storyMode = pinned ? "pinned" : "still";
+      if (pinned) {
+        for (const f of [0.05, 0.3, 0.55, 0.85]) {
+          const s = await storyAt(mp, f);
+          if (s && s.problems.length) r.story.push(`step ${s.step}: ${s.problems.join("; ")}`);
+          if (["fold", "se", "iphone", "phone-land", "ipad-mini", "ipad-land", "laptop-720", "qhd"].includes(name))
+            await mp.screenshot({ path: `${OUT}/${name}-story-${s?.step}.png` });
+        }
+      } else {
+        const m = await mp.evaluate(inspect);
+        for (const k of ["overlaps", "escapes", "edges", "spills"]) r[k].push(...m[k].map((x) => `(motion on) ${x}`));
       }
+      await mctx.close();
     }
     report[key] = r;
     if (["fold", "se", "iphone", "phone-land", "ipad-mini", "ipad-land", "laptop-720", "qhd"].includes(name)) {
@@ -196,7 +216,7 @@ for (const [k, r] of Object.entries(report)) {
   if (r.escapes.length) parts.push(`escapes: ${r.escapes.slice(0, 3).join(" | ")}`);
   if (r.edges.length) parts.push(`edges: ${r.edges.slice(0, 3).join(" | ")}`);
   if (r.spills.length) parts.push(`spills: ${r.spills.slice(0, 3).join(" | ")}`);
-  if (r.story?.length) parts.push(`story: ${r.story.join(" | ")}`);
+  if (r.story?.length) parts.push(`story (${r.storyMode}): ${r.story.join(" | ")}`);
   if (parts.length) lines.push(`${k}\n    ${parts.join("\n    ")}`);
   else clean++;
 }

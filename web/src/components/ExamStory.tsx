@@ -8,14 +8,28 @@ const STEPS = [
   { title: "NEAR checks and records it", text: "The contract checks every signature, then stamps the result on-chain for good." },
 ];
 
+const TOO_SHORT = "(max-width: 860px) and (max-height: 759px), (min-width: 861px) and (max-height: 619px)";
+
 /** A pinned scene that plays the exam as you scroll through it. */
 export function ExamStory() {
   const ref = useRef<HTMLElement>(null);
   const [step, setStep] = useState(0);
-  const [still] = useState(reducedMotion);
+  // Pinned only when the whole scene fits below the header; on short screens
+  // (phones held sideways, small phones) it lays out as a plain section instead.
+  const [still, setStill] = useState(() => reducedMotion() || matchMedia(TOO_SHORT).matches);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    const mq = matchMedia(TOO_SHORT);
+    const change = () => setStill(mq.matches);
+    mq.addEventListener("change", change);
+    return () => mq.removeEventListener("change", change);
+  }, []);
 
   useEffect(() => {
-    if (still) return setStep(3);
+    if (still) {
+      ref.current?.style.removeProperty("--p");
+      return setStep(3);
+    }
     let raf = 0;
     const update = () => {
       const el = ref.current;

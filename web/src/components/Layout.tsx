@@ -45,6 +45,18 @@ export function Layout() {
   useEffect(() => {
     document.querySelectorAll<HTMLDetailsElement>(".chip-pop[open]").forEach((d) => (d.open = false));
   }, [location.pathname]);
+  // The header's height changes with the screen (one row or two), so publish its
+  // bottom edge for anything that must sit below it: popups and the pinned story.
+  useLayoutEffect(() => {
+    const bar = document.querySelector("header.site .bar-glass");
+    if (!bar) return;
+    const set = () =>
+      document.documentElement.style.setProperty("--hdr-bottom", `${Math.ceil(bar.getBoundingClientRect().bottom)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
   const [announce, setAnnounce] = useState("");
   const firstLoad = useRef(true);
   useEffect(() => {
