@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { GlassVault } from "../components/GlassVault";
-import { Loading, PageHead, Panel, Unavailable, useAsync } from "../components/ui";
+import { Loading, PageHead, Panel, Unavailable, useAsync, useTitle } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { FingerprintSeal } from "../components/Seal";
 import { formatNear, proctor } from "../lib/near";
 
 export function Sets() {
+  useTitle("Tests");
   const { data, error, loading } = useAsync(() => (isConfigured ? proctor.sets() : Promise.resolve([])), []);
   return (
     <>

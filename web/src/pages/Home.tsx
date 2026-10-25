@@ -4,7 +4,7 @@ import { Bento } from "../components/Bento";
 import { ExamStory } from "../components/ExamStory";
 import { Reveal, useTilt } from "../components/motion";
 import { ScanStrip } from "../components/ScanStrip";
-import { AnswerSheet, Panel, Stamp, Unavailable, useAsync, Words } from "../components/ui";
+import { AnswerSheet, Panel, Stamp, Unavailable, useAsync, Words, useTitle, Loading } from "../components/ui";
 import { isConfigured } from "../lib/config";
 import { pct, proctor } from "../lib/near";
 import type { Certificate } from "../lib/types";
@@ -17,6 +17,7 @@ export function Home() {
     const set = sets.find((s) => s.set_id === featured) ?? sets[0];
     return set ? { set, certs: await proctor.certificates(set.set_id) } : null;
   }, []);
+  useTitle();
   const rows = data ? latestPerModel(data.certs) : [];
   const top = rows[0];
 
@@ -76,7 +77,7 @@ export function Home() {
               : "Ranked by overall score on the featured test."}
           </p>
         </div>
-        {loading && <p className="state" role="status">Loading results…</p>}
+        {loading && <Loading what="Loading results" height={210} />}
         {error && <Unavailable what="The results list" error={error} />}
         {data && <Leaderboard certs={data.certs} setTitle={data.set.title} />}
         {data === null && isConfigured && (
@@ -143,9 +144,9 @@ function HeroResult({
 }) {
   if (loading)
     return (
-      <Panel eyebrow="Top result" title="…" serial="Loading">
-        <p className="state" role="status">Loading the latest result…</p>
-      </Panel>
+      <div className="scene" role="status" aria-label="Loading the latest result…">
+        <div className="skeleton" style={{ height: 470 }} />
+      </div>
     );
   if (error) return <Unavailable what="The latest result" error={error} />;
   if (!top)

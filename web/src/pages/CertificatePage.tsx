@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CertificateDoc } from "../components/CertificateDoc";
 import { medianRun } from "../components/Leaderboard";
-import { AnswerSheet, ErrorNote, Hash, Loading, PageHead, Panel, Stamp, useAsync } from "../components/ui";
+import { AnswerSheet, ErrorNote, Hash, Loading, PageHead, Panel, Stamp, useAsync, useTitle } from "../components/ui";
 import { config } from "../lib/config";
 import { friendlyError } from "../lib/errors";
 import { codeHash, pct, proctor } from "../lib/near";
@@ -30,7 +30,8 @@ export function CertificatePage() {
     return { cert, set, model, contractCode };
   }, [evalId]);
 
-  if (loading) return <Loading what="Loading the result" />;
+  useTitle(data?.cert ? `${data.cert.model_id} certificate` : "Result");
+  if (loading) return <Loading what="Loading the result" height={760} />;
   if (error) return <ErrorNote error={error} />;
   if (!data)
     return (
@@ -83,7 +84,7 @@ export function CertificatePage() {
           </Panel>
 
           <Panel eyebrow="Every run" title="Run by run" sub="AI answers vary between runs, so the result combines several.">
-            <div className="table-wrap" style={{ border: 0 }}>
+            <div className="table-wrap" style={{ border: 0 }} tabIndex={0} role="region" aria-label="Results run by run">
               <table>
                 <thead>
                   <tr>

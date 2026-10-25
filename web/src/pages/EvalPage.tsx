@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Celebrate } from "../components/Celebrate";
 import { Link, useParams } from "react-router-dom";
-import { AccountLink, ErrorNote, Loading, PageHead, Panel, Stat, StatStrip, StatusBadge, useAsync } from "../components/ui";
+import { AccountLink, ErrorNote, Loading, PageHead, Panel, Stat, StatStrip, StatusBadge, useAsync, useTitle } from "../components/ui";
 import { friendlyError, isCancel } from "../lib/errors";
 import { explorerTx, formatNear, proctor, rpc, txHashOf } from "../lib/near";
 import { useToasts } from "../lib/toasts";
@@ -21,6 +21,8 @@ export function EvalPage() {
   // The chain's height, to spot batches whose result never came back.
   const head = useAsync(() => rpc<{ header: { height: number } }>("block", { finality: "final" }).then((b) => b.header.height), [], 15000);
   const [dispatching, setDispatching] = useState(false);
+  useTitle(`Test run ${evalId}`);
+  const setTitle = useAsync(() => (ev ? proctor.set(ev.set_id) : Promise.resolve(null)), [ev?.set_id]);
   // Celebrate only when a run finishes while you watch it.
   const lastStatus = useRef<string | null>(null);
   const [justCertified, setJustCertified] = useState(false);
@@ -56,7 +58,7 @@ export function EvalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [evalId]);
 
-  if (loading && !ev) return <Loading what="Loading the test run" />;
+  if (loading && !ev) return <Loading what="Loading the test run" height={640} />;
   if (error && !ev) return <ErrorNote error={error} />;
   if (!ev)
     return (
@@ -110,7 +112,7 @@ export function EvalPage() {
     <>
       <Celebrate show={justCertified} />
       <PageHead eyebrow={`Test run · No. ${ev.id}`} title={ev.model_id}>
-        On <Link viewTransition to={`/sets/${ev.set_id}`}>{ev.set_id}</Link>, {ev.runs} runs. <StatusBadge status={ev.status} />
+        On <Link viewTransition to={`/sets/${ev.set_id}`}>{setTitle.data?.title ?? ev.set_id}</Link>, {ev.runs} runs. <StatusBadge status={ev.status} />
       </PageHead>
 
       {ev.status === "Certified" && (
@@ -129,7 +131,7 @@ export function EvalPage() {
         <Stat hero label="Batches graded" value={`${done} / ${ev.chunks.length}`} />
         <Stat label="Grading now" value={running} />
         <Stat label="Waiting to start" value={waiting} />
-        <Stat label="Deposit left" value={`${formatNear(ev.escrow)} N`} sub="unused part is refunded" />
+        <Stat label="Deposit left" value={`${formatNear(ev.escrow)} NEAR`} sub="unused part is refunded" />
       </StatStrip>
 
       <section className="split" style={{ marginTop: "2rem" }}>
@@ -200,8 +202,11 @@ export function EvalPage() {
                 <dd className="hash">{ev.grader_hash}</dd>
               </div>
               <div>
-                <dt>Run nonces</dt>
-                <dd className="hash">{ev.nonces.join(", ")}</dd>
+                <dt>Run codes</dt>
+                <dd>
+                  <span className="hash">{ev.nonces.join(", ")}</span>
+                  <div className="small muted">Fresh random codes, one per run, that tie each run's signed answers to this run alone.</div>
+                </dd>
               </div>
             </dl>
           </Panel>

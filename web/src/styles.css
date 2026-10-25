@@ -101,7 +101,7 @@ a:hover { color: var(--accent-deep); }
 
 /* Living background: slow aurora behind everything, plus a faint dot lattice. */
 .aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-.aurora::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 1.3px); background-size: 24px 24px; mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 80%); }
+.aurora::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 1.3px); background-size: 24px 24px; mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 80%); -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 80%); }
 .aurora span { position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%; filter: blur(70px); opacity: var(--aurora-o); will-change: transform; }
 .aurora span:nth-child(1) { background: var(--aurora-a); top: -18vmax; right: -8vmax; animation: drift1 26s ease-in-out infinite alternate; }
 .aurora span:nth-child(2) { background: var(--aurora-b); top: 30vh; left: -20vmax; animation: drift2 32s ease-in-out infinite alternate; }
@@ -402,7 +402,7 @@ dl.facts dd .small { margin-top: 0.3rem; }
 .deck .ghost.g2 { transform: translate3d(42px, -42px, -120px) rotate(6deg); opacity: 0.5; animation: fan2 1.6s var(--ease) both; }
 @keyframes fan1 { from { transform: translate3d(0, 0, -60px); opacity: 0; } }
 @keyframes fan2 { from { transform: translate3d(0, 0, -120px); opacity: 0; } }
-.deck .ghost::after { content: ""; position: absolute; left: 22px; right: 22px; top: 26px; height: 60%; background: radial-gradient(circle, var(--axis) 4.5px, transparent 5px) 0 0 / 26px 26px; opacity: 0.5; mask-image: linear-gradient(#000, transparent); }
+.deck .ghost::after { content: ""; position: absolute; left: 22px; right: 22px; top: 26px; height: 60%; background: radial-gradient(circle, var(--axis) 4.5px, transparent 5px) 0 0 / 26px 26px; opacity: 0.5; mask-image: linear-gradient(#000, transparent); -webkit-mask-image: linear-gradient(#000, transparent); }
 .deck .front { position: relative; transform: translateZ(0); }
 .deck .float-stamp { position: absolute; right: -14px; top: -34px; transform: translateZ(90px); pointer-events: none; }
 .deck .float-stamp .stamp { position: relative; right: auto; top: auto; }
@@ -537,7 +537,9 @@ pre.cmd { border-radius: var(--r-sm); box-shadow: var(--neu-in); padding: 0.95re
 @keyframes word { from { transform: translateY(110%) rotate(4deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; transition-delay: 0s !important; }
+  /* Animations jump to their end state; transitions are switched off entirely,
+     so things like the focus outline appear at once. */
+  *, *::before, *::after { animation-duration: 0.001s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition: none !important; }
   .reveal { opacity: 1; transform: none; }
   .aurora span { animation: none; }
   .deck { transform: none !important; }
@@ -685,7 +687,7 @@ pre.cmd { border-radius: var(--r-sm); box-shadow: var(--neu-in); padding: 0.95re
 @keyframes cel-out { to { opacity: 0; } }
 .celebrate::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, color-mix(in srgb, var(--accent-2) 22%, transparent), transparent 60%); animation: flash 1.2s var(--ease) both; }
 @keyframes flash { from { opacity: 0; transform: scale(0.5); } 30% { opacity: 1; } }
-.celebrate .big-stamp { position: relative; width: 220px; height: 220px; border-radius: 50%; display: grid; place-items: center; align-content: center; text-align: center; color: var(--accent); border: 4px solid var(--accent); background: color-mix(in srgb, var(--coal) 88%, transparent); backdrop-filter: blur(10px); box-shadow: 0 30px 80px -20px var(--glow); animation: slam 0.7s var(--spring) both; }
+.celebrate .big-stamp { position: relative; width: 220px; height: 220px; border-radius: 50%; display: grid; place-items: center; align-content: center; text-align: center; color: var(--accent); border: 4px solid var(--accent); background: color-mix(in srgb, var(--coal) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 30px 80px -20px var(--glow); animation: slam 0.7s var(--spring) both; }
 .celebrate .big-stamp::before { content: ""; position: absolute; inset: 10px; border-radius: 50%; border: 1.5px dashed var(--accent); }
 .celebrate .big-stamp b { font: 400 2.1rem/1 var(--display); font-style: italic; }
 .celebrate .big-stamp span { font: 500 10px/1.4 var(--mono); letter-spacing: 0.24em; text-transform: uppercase; margin-top: 0.4rem; }
@@ -777,7 +779,7 @@ html.lenis { scroll-behavior: auto; }
 @keyframes foil-drift { to { transform: rotate(25deg) scale(1.08); } }
 .foil-emboss { position: absolute; inset: 0; z-index: 1; color: rgba(30, 50, 60, 0.6); filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.8)); }
 .foil-emboss .fseal-rings path { animation-duration: 3s; }
-.foil-label { position: absolute; z-index: 3; left: 50%; bottom: 13%; transform: translateX(-50%); text-align: center; padding: 0.3rem 0.7rem; border-radius: 999px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(4px); color: #13312a; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.foil-label { position: absolute; z-index: 3; left: 50%; bottom: 13%; transform: translateX(-50%); text-align: center; padding: 0.3rem 0.7rem; border-radius: 999px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); color: #13312a; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 .foil-label b { display: block; font: 400 0.95rem/1 var(--display); font-style: italic; }
 .foil-label span { display: block; font: 600 7.5px/1.3 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 0.15rem; }
 
@@ -875,3 +877,92 @@ html.lenis { scroll-behavior: auto; }
 .tile.ink .bars .name { color: color-mix(in srgb, var(--accent-ink) 85%, transparent); }
 .tile.reveal { transition: opacity 1s var(--ease), transform 1s var(--ease), box-shadow 0.55s var(--ease); transition-delay: calc(var(--i, 0) * 90ms); }
 .tile.reveal.in:hover { transition-delay: 0s; transform: translateY(-4px); }
+
+/* ---------- Accessibility and layout fixes from the UI audit ---------- */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; left: 16px; top: -60px; z-index: 100; padding: 0.7rem 1rem; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 500; text-decoration: none; transition: top 0.3s var(--ease); }
+.skip-link:focus { top: 12px; color: var(--accent-ink); }
+main:focus { outline: none; }
+/* Small kicker text stays readable over the bright aurora. */
+.eyebrow { color: var(--accent-deep); }
+/* Panel titles are h2 for a correct outline, styled like the old h3. */
+.panel-head .panel-title { font-size: 1.25rem; font-weight: 400; margin: 0; }
+/* Outlines inside clipping boxes are drawn inside so they stay visible. */
+details.more > summary:focus-visible, .cert :focus-visible, .board-row :focus-visible { outline-offset: -3px; }
+/* Long account names in the header end with an ellipsis. */
+.account-btn { max-width: 190px; }
+.account-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+/* The phone menu fades at its edge to show it scrolls. */
+@media (max-width: 760px) {
+  nav.main { mask-image: linear-gradient(90deg, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); padding-right: 1.5rem; }
+  nav.main a { padding: 0.45rem 0.7rem; }
+}
+/* Bento rows stack on phones instead of squeezing their text. */
+@media (max-width: 520px) {
+  .tile .row { flex-direction: column; align-items: flex-start; }
+  .tile .mini-beads { max-width: none; }
+}
+/* Page art stays small on phones so the task comes first. */
+@media (max-width: 600px) {
+  .page-head.with-art .vault { height: 170px; }
+  .page-head.with-art .cube-scene { height: 170px; transform: scale(0.7); }
+  .set-seal .fseal { width: 150px; height: 150px; }
+}
+.table-wrap:focus-visible { outline-offset: -3px; }
+
+/* ---------- Deployment notices: chips in the fixed-height header ---------- */
+.chips { display: flex; gap: 0.4rem; align-items: center; }
+.chip-pop { position: relative; }
+.chip-pop > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; font: 500 10.5px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink); padding: 0.5rem 0.65rem; border-radius: 999px; box-shadow: var(--neu-in); white-space: nowrap; }
+.chip-pop > summary::-webkit-details-marker { display: none; }
+.chip-pop > summary::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--glow); }
+.chip-pop.demo > summary { color: var(--warning); }
+.chip-pop.demo > summary::before { background: var(--warning); box-shadow: 0 0 8px var(--warning); }
+.chip-pop[open] > summary { box-shadow: var(--neu-sm); }
+.chip-pop .pop {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 60; width: min(340px, calc(100vw - 32px));
+  padding: 0.9rem 1rem; border-radius: 16px; font-size: 0.88rem; color: var(--ink-secondary);
+  background: color-mix(in srgb, var(--coal) 95%, transparent); border: 1px solid var(--glass-edge);
+  backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: var(--glass-shadow); animation: rise-in 0.35s var(--ease) both;
+}
+.chip-pop .pop strong { color: var(--ink); }
+.chip-pop .pop p { margin: 0; }
+@media (max-width: 760px) {
+  .chip-pop > summary { padding: 0.45rem 0.55rem; letter-spacing: 0.1em; }
+  .chip-pop .short-hide { display: none; }
+  .chip-pop .pop { position: fixed; left: 16px; right: 16px; top: 120px; width: auto; }
+}
+
+/* ---------- Contrast: small text stays readable over the aurora ---------- */
+:root { --ink-muted: #535a68; --aurora-o: 0.38; --link: #0a5a44; }
+@media (prefers-color-scheme: dark) { :root { --ink-muted: #aeb0b6; --aurora-o: 0.24; --link: #7fdcbc; } }
+a { color: var(--link); }
+.section-head p.eyebrow { color: var(--accent-deep); }
+.story-steps li { opacity: 1; color: var(--ink-muted); }
+.story-steps li.done { opacity: 1; }
+.story-steps li.active { color: var(--ink); }
+.story-steps li:not(.active) strong { font-weight: 400; }
+
+@media (max-width: 420px) {
+  header.site .short-hide { display: none; }
+  .account-btn { max-width: 120px; }
+}
+
+/* Phones: a still aurora looks the same and saves battery. */
+@media (max-width: 760px), (pointer: coarse) {
+  .aurora span { animation: none; filter: blur(56px); }
+}
+
+/* Tablets and small laptops: fewer, shorter header items so nothing is pushed off. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  header.site .net { display: none; }
+  .chip-pop .short-hide { display: none; }
+  nav.main { gap: 0; }
+  nav.main a { padding: 0.45rem 0.6rem; }
+  .account-btn { max-width: 150px; }
+}
+@media (min-width: 761px) and (max-width: 900px) {
+  .account-btn { max-width: 110px; }
+  .chip-pop > summary { padding: 0.45rem 0.5rem; letter-spacing: 0.08em; }
+}

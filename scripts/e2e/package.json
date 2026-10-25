@@ -6,6 +6,9 @@
   "dependencies": {
     "@noble/ed25519": "2.1.0",
     "@noble/hashes": "1.5.0",
+    "axe-core": "4.13.0",
+    "chrome-launcher": "1.2.2",
+    "lighthouse": "13.4.1",
     "near-api-js": "7.4.0"
   }
 }

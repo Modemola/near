@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { GlassVault } from "../components/GlassVault";
-import { ErrorNote, Hash, PageHead, Panel, useAsync } from "../components/ui";
+import { ErrorNote, Hash, PageHead, Panel, useAsync, useTitle } from "../components/ui";
 import { parseTestSet, setCommitment, type ParsedSet } from "../lib/commitment";
 import { config } from "../lib/config";
 import { friendlyError, isCancel } from "../lib/errors";
@@ -30,6 +30,7 @@ const EMPTY = {
 };
 
 export function PublishPage() {
+  useTitle("Publish a test");
   const { accountId, signIn, call } = useWallet();
   const toasts = useToasts();
   const grader = useAsync(() => proctor.config(), []);
@@ -211,7 +212,7 @@ export function PublishPage() {
             <div className="dropzone">
               <label className="field" style={{ margin: 0 }}>
                 <span>Test file (JSON)</span>
-                <input type="file" accept="application/json,.json" onChange={(e) => onFile(e.target.files?.[0])} />
+                <input type="file" accept="application/json,.json" aria-label="Test file (JSON)" onChange={(e) => onFile(e.target.files?.[0])} />
                 <small>
                   A list of messages, each with <code>id</code>, <code>channel</code>, <code>from</code>,{" "}
                   <code>text</code> and <code>label</code> (<code>SCAM</code> or <code>LEGIT</code>).

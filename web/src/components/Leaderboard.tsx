@@ -53,7 +53,9 @@ export function Leaderboard({ certs, setTitle }: { certs: Certificate[]; setTitl
         <span role="columnheader">Scams caught</span>
         <span role="columnheader">Real messages flagged</span>
         <span role="columnheader">Overall</span>
-        <span role="columnheader" />
+        <span role="columnheader">
+          <span className="sr-only">Result</span>
+        </span>
       </div>
       {rows.map((c, i) => (
         <div className={`board-row${i === 0 ? " first" : ""}`} role="row" key={c.eval_id} style={{ "--i": i } as CSSProperties}>

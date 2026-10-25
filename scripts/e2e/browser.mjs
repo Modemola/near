@@ -55,7 +55,7 @@ const go = async (path) => {
 await step("Home renders on an empty chain, with the test-signer notice", async () => {
   await go("/");
   await expectText("Which AI catches");
-  await expectText("Test signer active");
+  await expectText("Test signer");
   await expectText("No tests have been published yet");
 });
 

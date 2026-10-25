@@ -77,7 +77,8 @@ export function CountUp({ value, ms = 1400 }: { value: string | number; ms?: num
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
   return (
-    <span ref={ref} aria-label={text}>
+    <span ref={ref}>
+      <span className="sr-only">{text}</span>
       <span aria-hidden="true">{shown ?? (m ? m[1] + "0" + m[3] : text)}</span>
     </span>
   );
@@ -135,6 +136,14 @@ export function useAmbientMotion() {
       lightFoil(Math.max(-1, Math.min(1, e.gamma / 35)), Math.max(-1, Math.min(1, (e.beta - 45) / 35)));
     };
     window.addEventListener("deviceorientation", onTilt, { passive: true });
+    // iOS only sends tilt after the page asks, from a tap: ask on the first tap on a foil seal.
+    const askTilt = (e: PointerEvent) => {
+      const DOE = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+      if (!(e.target as Element | null)?.closest?.(".foil") || typeof DOE?.requestPermission !== "function") return;
+      document.removeEventListener("pointerdown", askTilt);
+      DOE.requestPermission().catch(() => {});
+    };
+    document.addEventListener("pointerdown", askTilt);
     const fine = window.matchMedia("(pointer: fine)").matches && !reducedMotion();
     let magnet: HTMLElement | null = null;
     const onMove = (e: PointerEvent) => {
@@ -183,6 +192,7 @@ export function useAmbientMotion() {
       document.removeEventListener("pointerout", onLeave as EventListener);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("deviceorientation", onTilt);
+      document.removeEventListener("pointerdown", askTilt);
       cancelAnimationFrame(raf);
     };
   }, []);
@@ -214,7 +224,7 @@ const Lock = () => (
 /** The sealed test: a turning glass box with the messages glowing inside. */
 export function SealedCube({ label = "A sealed test, readable only inside secure hardware" }: { label?: string }) {
   return (
-    <div className="cube-scene" role="img" aria-label={label}>
+    <div className="cube-scene" {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
       <div className="cube">
         <div className="face"><Check /></div>
         <div className="face"><div className="dots" /></div>

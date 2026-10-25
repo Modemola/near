@@ -1,10 +1,11 @@
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { GlassVault } from "../components/GlassVault";
-import { PageHead, Panel } from "../components/ui";
+import { PageHead, Panel, useTitle } from "../components/ui";
 import { config } from "../lib/config";
 
 export function HowPage() {
+  useTitle("How it works");
   return (
     <>
       <PageHead eyebrow="How it works" title={<>A fair exam, <em>proved</em></>} art={<GlassVault />}>

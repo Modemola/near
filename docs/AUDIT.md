@@ -54,3 +54,52 @@ the certificate (run switcher, copy link, print), verifying every signature
 from plain RPC, the leaderboard, the cap, and no console errors. It signs with
 a throwaway local key through a test-only signer that production builds don't
 contain.
+
+## Interface audit (2026-10-25)
+
+Same standard for everything people see and touch. Automated with
+`AUDIT=<dir> scripts/e2e/run.sh`, which runs the end-to-end flow on a fresh
+local chain and then audits every page on that real data: axe-core in light
+and dark mode, keyboard-only use, layout at 320 to 1920 px, reduced motion,
+NEAR unreachable, copy rules, page metadata, load metrics on a production
+build, and Lighthouse.
+
+| Measure | Before | After |
+|---|---|---|
+| axe violations (8 pages, light and dark) | 44 | 0 |
+| Keyboard: controls reachable by Tab, with a visible focus | gaps on 3 pages | every control on all 8 pages |
+| Layout problems at 320 to 1920 px | overflow, overlaps, cut-off text | none |
+| Lighthouse accessibility / best practices / SEO | 97 / 100 / 92 | 100 / 100 / 100 on every page |
+| Lighthouse performance, phone (home / certificate / publish) | 66 / 53 / 23 | 89 / 83 / 90 (varies a few points per run) |
+| Lighthouse performance, desktop | 95 / 97 / 56 | 100 / 100 / 100 |
+| Layout shift while loading | up to 0.68 | 0 to 0.003 |
+| JavaScript before first render | 1.63 MB | 306 KB (98 KB compressed) |
+
+### Findings and fixes
+
+| # | Area | Finding | Fix |
+|---|---|---|---|
+| U1 | Accessibility | Counting numbers and decoding hashes put a label on an element that can't carry one, so screen readers could skip the value | The real value sits in screen-reader text; the animation is hidden from them |
+| U2 | Accessibility | Headings skipped from h1 to h3 | Panel titles are h2 (styled as before) |
+| U3 | Accessibility | Small green labels, muted text and links failed contrast where the aurora shows through | Darker small text and links; softer aurora; one kicker style fixed |
+| U4 | Accessibility | Empty leaderboard column header; a scrolling table the keyboard couldn't reach; the decorative cube announced with a blank name | Named; focusable region; hidden from screen readers |
+| U5 | Accessibility | Focus outlines cut off inside clipping boxes; under reduced motion they animated in from zero | Inset outlines there; transitions off entirely under reduced motion |
+| U6 | Accessibility | Every page titled "Proctor"; page changes not announced; no skip link | Per-page titles, a live announcement on navigation, Skip to content |
+| U7 | Speed | Wallet libraries (1.2 MB) and their font loaded before anything rendered | Loaded when the browser is idle; every page but the landing page loads its own code |
+| U8 | Speed | Google Fonts blocked first paint; web fonts arriving late shifted text | Fonts ship with the site; the two first-paint fonts are preloaded |
+| U9 | Speed | The 3D vault blocked the main thread for minutes on a phone-class CPU without a GPU | Real 3D only on desktop with a hardware GPU, capped at 30 fps; the CSS cube elsewhere |
+| U10 | Speed | The message scanner read every card's layout each frame; the aurora animated forever on phones | Positions computed, not measured; still aurora on phones |
+| U11 | Layout | The demo notice appeared late at the top and pushed the page down | A Demo chip in the fixed-height header, with the explanation one tap away |
+| U12 | Layout | Long account names cut off; the phone menu cut off with no hint it scrolls; a cramped bento tile on phones; large page art pushing forms down | Ellipsis, edge fade, stacked tile, smaller art on phones |
+| U13 | States | With NEAR unreachable, pages took 6 to 8 seconds to say so | About 2 seconds; verification keeps longer patience |
+| U14 | Copy | "1 N" for NEAR; a test named by id; a label that disagreed with its value; "4000 tokens"; "Run nonces"; "2 times"; the scanner showed 11 scams before any real message; the foil seal printed a raw key | Fixed wording; scanner alternates scams and real messages; seal shows the serial |
+| U15 | Sharing | No link-preview image or tags, no theme colour or phone icon, no message without JavaScript, no robots.txt | Added, including a 1200 x 630 preview card |
+| U16 | Browsers | Two glass effects and two fades lacked Safari prefixes; iPhones never sent tilt to the foil seal | Prefixed; the foil asks for tilt permission on first tap |
+
+### Limits of this audit
+
+- Only Chromium is installed here, so Firefox and Safari were checked by
+  reading the CSS against their support, not by running them.
+- Lighthouse simulates a mid-range phone; numbers on real devices will vary.
+- The remaining phone gap is first paint on a slow connection: a single-page
+  app needs its JavaScript before it can draw.

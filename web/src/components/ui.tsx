@@ -32,12 +32,27 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[], pollMs?: nu
   return state;
 }
 
-export function Loading({ what = "Loading" }: { what?: string }) {
+export function Loading({ what = "Loading", height }: { what?: string; height?: number }) {
+  // With a height, a placeholder reserves the space the content will take,
+  // so nothing jumps when it arrives.
+  if (height)
+    return (
+      <div role="status" aria-label={`${what}…`}>
+        <div className="skeleton" style={{ height }} />
+      </div>
+    );
   return (
     <p className="state" role="status">
       {what}…
     </p>
   );
+}
+
+/** Sets the browser tab's title (and what screen readers announce on navigation). */
+export function useTitle(title?: string) {
+  useEffect(() => {
+    document.title = title ? `${title} · Proctor` : "Proctor: independent results for AI scam filters";
+  }, [title]);
 }
 
 export function ErrorNote({ error }: { error: string }) {
@@ -63,6 +78,7 @@ export function Panel({
   sub,
   serial,
   className = "",
+  level = 2,
   children,
 }: {
   eyebrow?: string;
@@ -70,15 +86,18 @@ export function Panel({
   sub?: ReactNode;
   serial?: string;
   className?: string;
+  /** Heading level of the title, so headings never skip a level (h1, then h2). */
+  level?: 2 | 3;
   children: ReactNode;
 }) {
+  const Title = level === 3 ? "h3" : "h2";
   return (
     <div className={`panel ${className}`}>
       {(title || eyebrow) && (
         <div className="panel-head">
           <div>
             {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-            {title && <h3>{title}</h3>}
+            {title && <Title className="panel-title">{title}</Title>}
             {sub && <p>{sub}</p>}
           </div>
           {serial && <span className="serial">{serial}</span>}
@@ -148,7 +167,8 @@ export function Hash({ value }: { value: string }) {
   const { ref, text } = useScramble(value);
   return (
     <span className="hash">
-      <span ref={ref as React.RefObject<HTMLSpanElement>} aria-label={value}>
+      <span ref={ref as React.RefObject<HTMLSpanElement>}>
+        <span className="sr-only">{value}</span>
         <span aria-hidden="true">{text}</span>
       </span>
       <button

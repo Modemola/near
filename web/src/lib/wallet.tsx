@@ -1,10 +1,6 @@
 /** NEAR wallet connection (wallet-selector) and contract calls. */
-import { actionCreators } from "@near-js/transactions";
-import { setupWalletSelector, type WalletSelector } from "@near-wallet-selector/core";
-import { setupMeteorWallet } from "@near-wallet-selector/meteor-wallet";
-import { setupModal, type WalletSelectorModal } from "@near-wallet-selector/modal-ui";
-import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
-import "@near-wallet-selector/modal-ui/styles.css";
+import type { WalletSelector } from "@near-wallet-selector/core";
+import type { WalletSelectorModal } from "@near-wallet-selector/modal-ui";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { config } from "./config";
 
@@ -54,15 +50,27 @@ function SelectorWalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubscribe = () => {};
-    setupWalletSelector({ network: config.networkId, modules: [setupMyNearWallet(), setupMeteorWallet()] }).then((s) => {
+    let cancelled = false;
+    // The page renders first; wallet code (the bulk of the app's JavaScript)
+    // loads when the browser is idle, well before anyone can click Connect.
+    const whenIdle = (f: () => void) =>
+      "requestIdleCallback" in window ? window.requestIdleCallback(f, { timeout: 2500 }) : setTimeout(f, 800);
+    new Promise<void>((resolve) => whenIdle(resolve))
+      .then(() => import("./walletSetup"))
+      .then(async ({ setupWallets }) => {
+      const { selector: s, modal: m } = await setupWallets();
+      if (cancelled) return;
       setSelector(s);
-      setModal(setupModal(s, { contractId: config.contractId }));
+      setModal(m);
       const update = () => setAccountId(s.store.getState().accounts.find((a) => a.active)?.accountId ?? null);
       update();
       const sub = s.store.observable.subscribe(update);
       unsubscribe = () => sub.unsubscribe();
     });
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   const value: WalletState = {
@@ -75,10 +83,10 @@ function SelectorWalletProvider({ children }: { children: ReactNode }) {
     },
     call: async (method, args, depositYocto = "0", tgas = 300) => {
       if (!selector) throw new Error("Wallet is still loading.");
-      const wallet = await selector.wallet();
+      const [wallet, { functionCall }] = await Promise.all([selector.wallet(), import("./walletSetup")]);
       return wallet.signAndSendTransaction({
         receiverId: config.contractId,
-        actions: [actionCreators.functionCall(method, args, BigInt(tgas) * 10n ** 12n, BigInt(depositYocto))],
+        actions: [functionCall(method, args, BigInt(tgas) * 10n ** 12n, BigInt(depositYocto))],
       });
     },
   };

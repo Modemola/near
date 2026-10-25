@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Leaderboard } from "../components/Leaderboard";
-import { AccountLink, ErrorNote, Hash, Loading, PageHead, Panel, Stat, StatStrip, useAsync } from "../components/ui";
+import { AccountLink, ErrorNote, Hash, Loading, PageHead, Panel, Stat, StatStrip, useAsync, useTitle } from "../components/ui";
 import { friendlyError, isCancel } from "../lib/errors";
 import { explorerTx, formatNear, proctor, txHashOf, waitForCall } from "../lib/near";
 import { useToasts } from "../lib/toasts";
@@ -26,8 +26,9 @@ export function SetPage() {
     ]);
     return { set, certs, models, config };
   }, [setId]);
+  useTitle(data?.set?.title ?? "Test");
 
-  if (loading) return <Loading what="Loading the test" />;
+  if (loading) return <Loading what="Loading the test" height={720} />;
   if (error) return <ErrorNote error={error} />;
   if (!data?.set)
     return (
@@ -55,7 +56,7 @@ export function SetPage() {
       <StatStrip>
         <Stat label="Sealed messages" value={set.item_count} sub="nobody can read them" />
         <Stat label="Models certified" value={new Set(certs.map((c) => c.model_id)).size} />
-        <Stat hero label="Price per certification" value={`${formatNear(set.price)} N`} sub={`${set.author_bps / 100}% goes to the author`} />
+        <Stat hero label="Price per certification" value={`${formatNear(set.price)} NEAR`} sub={`${set.author_bps / 100}% goes to the author`} />
         <Stat label="Runs per certification" value={config.runs_per_eval} sub={`${chunks} batches each`} />
       </StatStrip>
 
@@ -77,12 +78,12 @@ export function SetPage() {
               <div>
                 <dt>Messages</dt>
                 <dd>
-                  {set.item_count}, graded in batches of {set.chunk_size}. Each answer may use up to {set.max_tokens}{" "}
-                  tokens; running out counts as a mistake.
+                  {set.item_count}, graded in batches of {set.chunk_size}. Each answer may use up to {set.max_tokens.toLocaleString("en-US")}{" "}
+                  tokens (about {Math.round(set.max_tokens * 0.75).toLocaleString("en-US")} words); running out counts as a mistake.
                 </dd>
               </div>
               <div>
-                <dt>Runs per model</dt>
+                <dt>Certifications per model</dt>
                 <dd>
                   At most {set.eval_cap_per_model} certification{set.eval_cap_per_model === 1 ? "" : "s"} per model, so
                   repeated runs can't be used to work out the messages.

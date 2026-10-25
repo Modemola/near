@@ -168,7 +168,7 @@ async function rpcArchival<T>(method: string, params: unknown): Promise<T> {
       if (e instanceof TypeError) archivalDown = true; // unreachable (network or CORS)
     }
   }
-  return rpc<T>(method, params);
+  return rpc<T>(method, params, undefined, 5);
 }
 
 /**

@@ -168,6 +168,7 @@ export function mountVault(host: HTMLElement): () => void {
   let spin = 0;
   const frame = (now: number) => {
     raf = requestAnimationFrame(frame);
+    if (now - last < 1000 / 31) return; // about 30 fps: half the work, same slow turn
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     if (!visible || document.hidden) return;

@@ -11,6 +11,18 @@ interface Item {
 
 const CHANNEL: Record<string, string> = { sms: "Text", email: "Email", whatsapp: "WhatsApp", social_dm: "Direct message", voice_transcript: "Voicemail" };
 
+/** Alternate scams and real messages, so the strip shows the mix a test really has. */
+export function interleave(items: Item[]): Item[] {
+  const scams = items.filter((i) => i.label === "SCAM");
+  const real = items.filter((i) => i.label !== "SCAM");
+  const out: Item[] = [];
+  for (let k = 0; k < Math.max(scams.length, real.length); k++) {
+    if (scams[k]) out.push(scams[k]);
+    if (real[k]) out.push(real[k]);
+  }
+  return out;
+}
+
 /**
  * Messages from the public sample glide through a scan line and are stamped
  * with the answer key as they pass. Public items only: the private test is
@@ -24,7 +36,7 @@ export function ScanStrip() {
   useEffect(() => {
     fetch("/examples/scam-sample.json")
       .then((r) => r.json())
-      .then((d: { items: Item[] }) => setItems(d.items.slice(0, 14)))
+      .then((d: { items: Item[] }) => setItems(interleave(d.items).slice(0, 14)))
       .catch(() => setItems([]));
   }, []);
 
@@ -42,7 +54,19 @@ export function ScanStrip() {
     let raf = 0;
     let paused = false;
     let visible = true;
-    const half = el.scrollWidth / 2;
+    // Card positions follow from the track offset and the card stride, so the
+    // loop never reads layout (which would force a reflow every frame).
+    let half = el.scrollWidth / 2;
+    let stride = 0;
+    let beam = 0;
+    const measure = () => {
+      half = el.scrollWidth / 2;
+      stride = cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : cards[0].offsetWidth;
+      beam = host.clientWidth / 2;
+    };
+    measure();
+    const cardHalf = cards[0].offsetWidth / 2;
+    const scanned = new Array(cards.length).fill(false);
     const frame = (t: number) => {
       const dt = last ? Math.min(64, t - last) : 16;
       last = t;
@@ -50,11 +74,12 @@ export function ScanStrip() {
         x -= dt * 0.055;
         if (x <= -half) x += half;
         el.style.transform = `translate3d(${x}px,0,0)`;
-        const beam = host.getBoundingClientRect().left + host.clientWidth / 2;
-        for (const c of cards) {
-          const r = c.getBoundingClientRect();
-          if (r.left + r.width * 0.5 < beam) c.classList.add("scanned");
-          else c.classList.remove("scanned");
+        for (let i = 0; i < cards.length; i++) {
+          const passed = x + i * stride + cardHalf < beam;
+          if (passed !== scanned[i]) {
+            scanned[i] = passed;
+            cards[i].classList.toggle("scanned", passed);
+          }
         }
       }
       raf = requestAnimationFrame(frame);
@@ -62,6 +87,7 @@ export function ScanStrip() {
     raf = requestAnimationFrame(frame);
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
     io.observe(host);
+    window.addEventListener("resize", measure);
     const pause = () => (paused = true);
     const play = () => (paused = false);
     host.addEventListener("pointerenter", pause);
@@ -69,6 +95,7 @@ export function ScanStrip() {
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
+      window.removeEventListener("resize", measure);
       host.removeEventListener("pointerenter", pause);
       host.removeEventListener("pointerleave", play);
     };

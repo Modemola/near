@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { config, isConfigured } from "../lib/config";
 import { proctor } from "../lib/near";
@@ -33,9 +33,35 @@ export function Layout() {
   }, [location.pathname]);
   useSmoothScroll();
   useLayoutEffect(() => scrollToTop(), [location.pathname]);
+  // Close an open notice when clicking elsewhere or changing page.
+  useEffect(() => {
+    const close = (e: Event) =>
+      document.querySelectorAll<HTMLDetailsElement>(".chip-pop[open]").forEach((d) => {
+        if (!d.contains(e.target as Node)) d.open = false;
+      });
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, []);
+  useEffect(() => {
+    document.querySelectorAll<HTMLDetailsElement>(".chip-pop[open]").forEach((d) => (d.open = false));
+  }, [location.pathname]);
+  const [announce, setAnnounce] = useState("");
+  const firstLoad = useRef(true);
+  useEffect(() => {
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      return;
+    }
+    // Pages set their title in an effect; read it once they have.
+    const t = setTimeout(() => setAnnounce(document.title), 300);
+    return () => clearTimeout(t);
+  }, [location.pathname]);
 
   return (
     <>
+      <a className="skip-link" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }}>
+        Skip to content
+      </a>
       <Aurora />
       <Cursor />
       <div className="scroll-progress" aria-hidden="true" />
@@ -59,42 +85,65 @@ export function Layout() {
               <NavLink viewTransition to="/how">How it works</NavLink>
               <NavLink viewTransition to="/publish">Publish a test</NavLink>
             </nav>
+            {(simulated || devSignerActive) && (
+              // In the fixed-height header: always visible, never shifts the page.
+              <div className="chips">
+                {simulated && (
+                  <details className="chip-pop demo">
+                    <summary>
+                      Demo<span className="short-hide"> · simulated</span>
+                    </summary>
+                    <div className="pop" role="note">
+                      <p>
+                        <strong>You are looking at a demo.</strong> Grading jobs go to{" "}
+                        <code>{cfg.data?.outlayer}</code>, a stand-in for OutLayer, not secure hardware. Its models and
+                        scores only show how Proctor works. They are not real results.
+                      </p>
+                    </div>
+                  </details>
+                )}
+                {devSignerActive && (
+                  <details className="chip-pop">
+                    <summary>
+                      Test signer<span className="short-hide"> active</span>
+                    </summary>
+                    <div className="pop" role="note">
+                      <p>
+                        This development build signs as <code>{accountId}</code> with a local test key. Production builds
+                        never include it.
+                      </p>
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
             <span className="net" title="NEAR network">
               {config.networkId}
             </span>
             {accountId ? (
-              <button className="btn secondary small" onClick={() => signOut()} title="Disconnect wallet">
-                {accountId.length > 22 ? `${accountId.slice(0, 20)}…` : accountId}
+              <button className="btn secondary small account-btn" onClick={() => signOut()} title={`${accountId}: disconnect wallet`}>
+                <span>{accountId}</span>
               </button>
             ) : (
               <button className="btn small" onClick={signIn} disabled={!ready}>
-                Connect wallet
+                Connect<span className="short-hide"> wallet</span>
               </button>
             )}
           </div>
         </div>
       </header>
-      <main>
+      <main id="main" tabIndex={-1}>
         <div className="wrap">
-          {simulated && (
-            <div className="note demo" role="note">
-              <strong>You are looking at a demo.</strong> Its grading is simulated (jobs go to{" "}
-              <code>{cfg.data?.outlayer}</code>, not secure hardware), so its models and scores only show how Proctor
-              works. They are not real results.
-            </div>
-          )}
-          {devSignerActive && (
-            <div className="note" role="note">
-              <strong>Test signer active.</strong> This development build signs as <code>{accountId}</code> with a local
-              test key. Production builds never include it.
-            </div>
-          )}
           {!isConfigured && (
             <div className="note">
               <strong>Proctor isn't connected to a contract yet.</strong> Set <code>VITE_CONTRACT_ID</code> in{" "}
               <code>web/.env.local</code> (see <code>.env.example</code>).
             </div>
           )}
+          {/* Screen readers hear the new page's title after each navigation. */}
+          <div className="sr-only" role="status" aria-live="polite">
+            {announce}
+          </div>
           <div className="route" key={location.pathname}>
             <Outlet />
           </div>

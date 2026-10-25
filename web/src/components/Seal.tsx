@@ -8,16 +8,19 @@ export function FingerprintSeal({
   caption,
   spin = false,
   className = "",
+  code,
 }: {
   hash: string;
   size?: number;
   caption?: string;
+  /** Text printed around the centre; the start of the hash by default. */
+  code?: string;
   spin?: boolean;
   className?: string;
 }) {
   const seal = useMemo(() => sealFor(hash), [hash]);
   const id = useMemo(() => `seal-${hash.slice(0, 10).replace(/[^a-zA-Z0-9]/g, "")}-${size}`, [hash, size]);
-  const text = `${caption ?? "PROCTOR SEAL"} · ${hash.slice(0, 16)} · `;
+  const text = `${caption ?? "PROCTOR SEAL"} · ${code ?? hash.slice(0, 16)} · `;
   return (
     <svg
       className={`fseal${spin ? " spin" : ""} ${className}`}
@@ -51,11 +54,11 @@ export function FingerprintSeal({
 }
 
 /** A holographic foil seal: the fingerprint seal embossed on foil that shifts with the pointer or the phone's tilt. */
-export function FoilSeal({ hash, label, sub, size = 170 }: { hash: string; label: string; sub?: string; size?: number }) {
+export function FoilSeal({ hash, code, label, sub, size = 170 }: { hash: string; code?: string; label: string; sub?: string; size?: number }) {
   return (
     <div className="foil" style={{ width: size, height: size }} role="img" aria-label={`${label} seal${sub ? `, ${sub}` : ""}`}>
       <div className="foil-sheen" aria-hidden="true" />
-      <FingerprintSeal hash={hash} size={size} className="foil-emboss" />
+      <FingerprintSeal hash={hash} code={code} size={size} className="foil-emboss" />
       <div className="foil-label" aria-hidden="true">
         <b>{label}</b>
         {sub && <span>{sub}</span>}

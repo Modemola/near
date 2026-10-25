@@ -4,6 +4,7 @@
  * wallet provider only loads it in development builds (import.meta.env.DEV)
  * with both VITE_DEV_* variables set, so production builds never contain it.
  */
+import "../polyfills";
 import { KeyPair, type KeyPairString } from "@near-js/crypto";
 import { actionCreators, createTransaction, encodeTransaction, Signature, SignedTransaction } from "@near-js/transactions";
 import { baseDecode } from "@near-js/utils";

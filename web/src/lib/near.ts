@@ -13,14 +13,16 @@ let preferred = 0;
  * NEAR JSON-RPC. Public nodes rate-limit bursts (and a refused request can
  * look like a network error in a browser), so a busy or unreachable endpoint
  * hands over to the next one in config.rpcUrl + rpcFallbackUrls, with
- * backoff between rounds. Errors the chain itself returns are not retried.
+ * backoff between rounds: 3 rounds (about 2 s) by default, so a page can say
+ * NEAR is unreachable quickly; verification asks for more patience.
+ * Errors the chain itself returns are not retried.
  * With an explicit `url` (the archival node), only that endpoint is tried once.
  */
-export async function rpc<T>(method: string, params: unknown, url?: string): Promise<T> {
+export async function rpc<T>(method: string, params: unknown, url?: string, rounds = 3): Promise<T> {
   if (url) return rpcOnce<T>(method, params, url);
   const list = [config.rpcUrl, ...config.rpcFallbackUrls.filter((u) => u !== config.rpcUrl)];
   let last: unknown;
-  for (let round = 0; round < 4; round++) {
+  for (let round = 0; round < rounds; round++) {
     for (let k = 0; k < list.length; k++) {
       const i = (preferred + k) % list.length;
       try {
@@ -32,7 +34,7 @@ export async function rpc<T>(method: string, params: unknown, url?: string): Pro
         last = e;
       }
     }
-    if (round < 3) await new Promise((r) => setTimeout(r, 800 * 2 ** round));
+    if (round < rounds - 1) await new Promise((r) => setTimeout(r, 700 * 2 ** round));
   }
   throw last;
 }

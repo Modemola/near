@@ -10,6 +10,8 @@ import { FingerprintSeal, FoilSeal, GuillocheBand, Microprint } from "./Seal";
 /** The data a certificate's own seal is drawn from: what the contract recorded. */
 export const certSealKey = (c: Certificate) => `${c.eval_id}|${c.set_commitment}|${c.model_id}|${c.grader_hash}|${c.issued_at_block}`;
 
+const timesWord = (n: number) => (n === 1 ? "once" : n === 2 ? "twice" : `${n} times`);
+
 /** A result presented as a security-printed certificate. */
 export function CertificateDoc({ cert, set }: { cert: Certificate; set: TestSet | null }) {
   const [copied, setCopied] = useState(false);
@@ -43,7 +45,7 @@ export function CertificateDoc({ cert, set }: { cert: Certificate; set: TestSet 
             </h1>
             <p className="cert-line">
               sat <Link viewTransition to={`/sets/${cert.set_id}`}>{set?.title ?? cert.set_id}</Link>,{" "}
-              {cert.item_count} sealed messages it had never seen, {cert.runs.length} times, and scored
+              {cert.item_count} sealed messages it had never seen, {timesWord(cert.runs.length)}, and scored
             </p>
 
             <div className="cert-figures">
@@ -67,7 +69,7 @@ export function CertificateDoc({ cert, set }: { cert: Certificate; set: TestSet 
               </div>
             </div>
           </div>
-          <FoilSeal hash={certSealKey(cert)} label="Certified" sub={`No. ${cert.eval_id} · NEAR`} size={176} />
+          <FoilSeal hash={certSealKey(cert)} code={serial} label="Certified" sub={`No. ${cert.eval_id} · NEAR`} size={176} />
         </div>
 
         <div className="cert-foot">
