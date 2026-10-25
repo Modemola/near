@@ -186,6 +186,12 @@ On Lighthouse's simulated connection the first paint (2.2 to 2.3 s) is now set
 by network round trips, not by JavaScript; on a real slow phone the gain is
 larger, because the page no longer waits for the scripts to download and run.
 
+After both changes, a full run on a fresh chain: end-to-end 17/17, 128/128
+page and screen-size combinations clean, axe 0, every pre-rendered page
+attaches with no hydration errors, layout shift 0 to 0.003, and Lighthouse
+93 / 94 / 94 on a simulated phone (home / certificate / publish) and 100 on
+desktop, with accessibility, best practices and SEO at 100 throughout.
+
 Hosting: serve each page's `<page>.html` or `<page>/index.html` (both are
 written), and fall back to `app.html` for every other address. A host that
 falls back to `index.html` instead still works: a small script clears the home
