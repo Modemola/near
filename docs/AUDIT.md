@@ -154,3 +154,39 @@ Two reports in the first run came from the checker, not the site, and the
 checker was corrected: it measured the story with reduced motion (where the
 story is deliberately not pinned), and it measured the tilted 3D hero card's
 sloped outline rather than its layout.
+
+## First impressions (2026-10-25)
+
+Two changes aimed at what a visitor sees in their first minute.
+
+**Check it yourself, from the home page.** Under the hero, the top result
+sits next to the check that proves it. One click re-checks every signed answer
+in the visitor's browser, from a public NEAR node, and ends with "What just
+happened": the batches found in NEAR's records, the signatures checked, and
+the sum that matches the certificate. The checking code loads only when
+someone clicks. The end-to-end test runs it (step "Home: one click checks the
+top result").
+
+**Pre-rendered pages.** The home, Tests, Publish and How it works pages read
+nothing from the chain before their first render, so `npm run build` renders
+them to HTML (`web/scripts/prerender.mjs`, using `src/entry-server.tsx`), with
+their stylesheet inline. Phones draw them before the JavaScript arrives, and
+visitors without JavaScript see the page instead of a notice. React then
+attaches to that HTML in place (it does not redraw it). The UI audit checks
+this on every run: each pre-rendered page attaches with no hydration errors,
+with motion on and off.
+
+| Lighthouse, simulated phone (3 runs each) | Plain build | Pre-rendered |
+|---|---|---|
+| Home | 84 to 91, largest paint 2.9 to 3.0 s | 88 to 95, 2.6 to 2.9 s |
+| How it works | 80 to 92, 3.0 s | 89 to 94, 2.7 to 3.0 s |
+| Publish | 84 to 91, 3.0 to 3.3 s | 88 to 95, 2.6 to 2.8 s |
+
+On Lighthouse's simulated connection the first paint (2.2 to 2.3 s) is now set
+by network round trips, not by JavaScript; on a real slow phone the gain is
+larger, because the page no longer waits for the scripts to download and run.
+
+Hosting: serve each page's `<page>.html` or `<page>/index.html` (both are
+written), and fall back to `app.html` for every other address. A host that
+falls back to `index.html` instead still works: a small script clears the home
+page's HTML before it is drawn on any other address.
