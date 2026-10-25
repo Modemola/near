@@ -50,6 +50,11 @@ for _ in $(seq 1 60); do curl -s -o /dev/null http://localhost:5174/ && break; s
 
 node browser.mjs http://localhost:5174
 
+# RESPONSIVE=<dir>: check every page on 15 device sizes for overlaps and cut-offs.
+if [ -n "$RESPONSIVE" ]; then
+  node responsive.mjs http://localhost:5174 "$RESPONSIVE" "$DEVICES"
+fi
+
 # AUDIT=<dir>: also audit the UI on the data the browser test created, with a
 # production build for load metrics.
 if [ -n "$AUDIT" ]; then
@@ -60,4 +65,10 @@ if [ -n "$AUDIT" ]; then
   node ui-audit.mjs http://localhost:5174 http://localhost:5175 "$AUDIT"
   node lighthouse.mjs http://localhost:5175 "$AUDIT"
   kill "$PREVIEW" 2>/dev/null || true
+fi
+
+# HOLD=1: keep the chain and the dev server running (for re-running audits by hand).
+if [ -n "$HOLD" ]; then
+  echo "holding: app on http://localhost:5174"
+  wait "$VITE"
 fi
