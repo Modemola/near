@@ -44,6 +44,7 @@ is honest.
 | Label rule parity | `python3 spikes/scam-sample-eval/test_labels.py` | 21/21 |
 | Web logic | `cd web && npx vitest run` | 31 passed |
 | Every button, end to end | `scripts/e2e/run.sh` | 16/16 steps, four fresh runs |
+| Every page on 16 screen sizes | `RESPONSIVE=<dir> scripts/e2e/run.sh` | 128/128 clean (2026-10-25) |
 | Live testnet demo | Verify on `/certificates/0` and `/certificates/1` | 40/40 answers each, totals match |
 
 The end-to-end run starts a fresh local NEAR chain with the real contract and
@@ -130,7 +131,8 @@ account name in full.
 
 | Measure | Before | After |
 |---|---|---|
-| Page and screen-size combinations with no problem | 7 of 120 | RESULT_PLACEHOLDER |
+| Page and screen-size combinations with no problem | 7 of 120 | 128 of 128 (one more size, 200% zoom, and stricter checks added along the way) |
+| End-to-end steps, axe violations, Lighthouse accessibility / best practices / SEO | 16/16, 0, 100 | unchanged: 16/16, 0, 100 on every page |
 
 ### Findings and fixes
 
