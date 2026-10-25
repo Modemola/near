@@ -124,8 +124,9 @@ Beyond the checks of the interface audit (which looked at text only), it
 compares whole components (panels, tiles, cards, buttons, form fields, the 3D
 and animated scenes), opens each header popup, plays the pinned story at four
 scroll positions with motion on, and checks that its pieces keep their own
-space, that pinned sidebars fit on screen, and that decoration is never cut
-off by the screen edge.
+space, that pinned sidebars fit on screen, that decoration is never cut
+off by the screen edge, and that header items stay on one line with the
+account name in full.
 
 | Measure | Before | After |
 |---|---|---|
@@ -145,6 +146,7 @@ off by the screen edge.
 | R8 | Sidebars | On laptops and landscape iPads, pinned sidebars on the test and How it works pages were taller than the screen, so their end could not be reached | A sidebar stays pinned only while it fits; a taller one scrolls with the page |
 | R9 | Hero | On phones the fanned cards behind the top result reached past the screen edge | They fan upward with less tilt on phones |
 | R10 | Cursor | On desktop the cursor ring sat in the middle of the screen until the mouse first moved | Hidden until the mouse moves, then appears where it is |
+| R11 | Header | Above 1380 px the header stops growing but showed its longest labels, so the account name was squeezed to "alice.te…" on every large screen, and at 1280 px the TESTNET label wrapped onto two lines | Notice chips keep short labels at every width (details are in their popups), the account button never shrinks, and the network label stays on one line |
 
 Two reports in the first run came from the checker, not the site, and the
 checker was corrected: it measured the story with reduced motion (where the
