@@ -62,19 +62,33 @@ export function Layout() {
   useEffect(() => {
     const main = document.getElementById("main");
     if (!main) return;
-    const check = () =>
+    // Measured only in ResizeObserver callbacks, after the browser's own layout,
+    // so this never forces an extra one. A page's content changing size changes
+    // main's size, which is when a new or grown sidebar gets picked up.
+    const check = (entries: ResizeObserverEntry[] = []) => {
+      const header = document.querySelector("header.site .bar-glass")?.getBoundingClientRect().bottom ?? 80;
+      const room = window.innerHeight - header - 32;
       main.querySelectorAll<HTMLElement>(".split > aside").forEach((a) => {
-        const room = window.innerHeight - parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hdr-bottom") || "80") - 32;
-        a.classList.toggle("tall", a.offsetHeight > room);
+        ro.observe(a);
+        const entry = entries.find((e) => e.target === a);
+        const height = entry ? entry.borderBoxSize[0].blockSize : a.offsetHeight;
+        a.classList.toggle("tall", height > room);
       });
+    };
     const ro = new ResizeObserver(check);
-    const watch = () => main.querySelectorAll(".split > aside").forEach((a) => ro.observe(a));
-    const mo = new MutationObserver(() => { watch(); check(); });
-    mo.observe(main, { childList: true, subtree: true });
-    watch();
-    check();
-    window.addEventListener("resize", check);
-    return () => { ro.disconnect(); mo.disconnect(); window.removeEventListener("resize", check); };
+    ro.observe(main);
+    // A window made only taller or shorter doesn't resize main.
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => check());
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
   const [announce, setAnnounce] = useState("");
   const firstLoad = useRef(true);

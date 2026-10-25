@@ -103,3 +103,50 @@ build, and Lighthouse.
 - Lighthouse simulates a mid-range phone; numbers on real devices will vary.
 - The remaining phone gap is first paint on a slow connection: a single-page
   app needs its JavaScript before it can draw.
+
+## Responsive audit (2026-10-25)
+
+Same standard again, for every screen size: no component overlaps another,
+nothing escapes its container, nothing is cut off at the screen edge, and no
+text spills out of its box. Automated with `RESPONSIVE=<dir> scripts/e2e/run.sh`,
+which checks all 8 pages on 16 screen sizes on the end-to-end test's real data:
+
+| Group | Sizes |
+|---|---|
+| Small phones | Galaxy Fold 280 x 653, iPhone SE 320 x 568 |
+| Phones | 375 x 667, 390 x 844, 412 x 915 |
+| Phones turned sideways | 568 x 320, 844 x 390 |
+| 200% browser zoom | 1280 x 720 at 200% (640 x 360) |
+| Tablets | iPad mini 768 x 1024, iPad 1024 x 768, iPad Pro 1024 x 1366 |
+| Laptops and desktops | 1280 x 720, 1366 x 768, 1440 x 900, 1920 x 1080, 2560 x 1440 |
+
+Beyond the checks of the interface audit (which looked at text only), it
+compares whole components (panels, tiles, cards, buttons, form fields, the 3D
+and animated scenes), opens each header popup, plays the pinned story at four
+scroll positions with motion on, and checks that its pieces keep their own
+space, that pinned sidebars fit on screen, and that decoration is never cut
+off by the screen edge.
+
+| Measure | Before | After |
+|---|---|---|
+| Page and screen-size combinations with no problem | 7 of 120 | RESULT_PLACEHOLDER |
+
+### Findings and fixes
+
+| # | Area | Finding | Fix |
+|---|---|---|---|
+| R1 | Header | On the iPad mini (768 to 900 px) the header tried to fit on one row and the account button ran off the screen | The header uses its two-row layout up to 900 px |
+| R2 | Header | The Demo and Test signer popups covered the bottom of the header (by 14 px on phones, 2 px on desktop) | The header publishes its real height; popups open below it at every size, and scroll if the screen is short |
+| R3 | Layout | On 280 to 320 px phones, two-column grids asked for 280 px columns, pushing the Tests cards and the Publish form fields off the screen | Columns never ask for more than the space they have |
+| R4 | Layout | A panel's title and its serial number could not wrap, so the serial was cut off on the narrowest phones | They share a row while they fit, then wrap |
+| R5 | Leaderboard | Beside a sidebar on an iPad, the leaderboard's column headings spilled out of their columns | The leaderboard stacks whenever its own box is narrow (a container query), not only on phones |
+| R6 | Story | The pinned story assumed a fixed header height, and on short screens (small phones, phones sideways, 200% zoom) its scene could not fit below the header | It pins right below the header's real height, and on screens too short for it lays out as a plain section with every step shown |
+| R7 | Story | In the last step the Certified stamp covered the NEAR block and the hardware frame; on phones the answer beads touched the block; the AI model chip crossed the secure-hardware frame | Each piece has its own space at every size; the model chip sits inside the frame |
+| R8 | Sidebars | On laptops and landscape iPads, pinned sidebars on the test and How it works pages were taller than the screen, so their end could not be reached | A sidebar stays pinned only while it fits; a taller one scrolls with the page |
+| R9 | Hero | On phones the fanned cards behind the top result reached past the screen edge | They fan upward with less tilt on phones |
+| R10 | Cursor | On desktop the cursor ring sat in the middle of the screen until the mouse first moved | Hidden until the mouse moves, then appears where it is |
+
+Two reports in the first run came from the checker, not the site, and the
+checker was corrected: it measured the story with reduced motion (where the
+story is deliberately not pinned), and it measured the tilted 3D hero card's
+sloped outline rather than its layout.

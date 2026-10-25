@@ -404,6 +404,11 @@ dl.facts dd .small { margin-top: 0.3rem; }
 .deck .ghost { position: absolute; inset: 0; border-radius: var(--r-lg); background: var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .deck .ghost.g1 { transform: translate3d(22px, -22px, -60px) rotate(3deg); opacity: 0.75; animation: fan1 1.4s var(--ease) both; }
 .deck .ghost.g2 { transform: translate3d(42px, -42px, -120px) rotate(6deg); opacity: 0.5; animation: fan2 1.6s var(--ease) both; }
+/* Phones: fan the cards upward with less tilt, so they stay inside the screen's gutter. */
+@media (max-width: 600px) {
+  .deck .ghost.g1 { transform: translate3d(6px, -16px, -60px) rotate(1deg); }
+  .deck .ghost.g2 { transform: translate3d(12px, -30px, -120px) rotate(2deg); }
+}
 @keyframes fan1 { from { transform: translate3d(0, 0, -60px); opacity: 0; } }
 @keyframes fan2 { from { transform: translate3d(0, 0, -120px); opacity: 0; } }
 .deck .ghost::after { content: ""; position: absolute; left: 22px; right: 22px; top: 26px; height: 60%; background: radial-gradient(circle, var(--axis) 4.5px, transparent 5px) 0 0 / 26px 26px; opacity: 0.5; mask-image: linear-gradient(#000, transparent); -webkit-mask-image: linear-gradient(#000, transparent); }

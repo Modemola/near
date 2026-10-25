@@ -97,6 +97,12 @@ function inspect() {
       if (out.edges.length > 10) break;
     }
   }
+  // 3b. Decoration is allowed to overlap content, but not to be cut off by the screen edge.
+  for (const el of document.querySelectorAll(".deck .ghost, .float-stamp, .stamp, .st-stamp, .foil, .cert-watermark, .vault, .cube-scene")) {
+    const r = el.getBoundingClientRect();
+    if (!visible(el) || inClosed(el)) continue;
+    if (r.right > vw + 1 || r.left < -1) out.edges.push(`decoration ${describe(el)} cut off by the screen edge (${Math.round(r.left)}..${Math.round(r.right)} of ${vw})`);
+  }
   // 4. Text spilling out of its own box (no scroll, no ellipsis).
   for (const el of document.querySelectorAll("body *")) {
     if (!visible(el) || isDecor(el) || inClosed(el) || el.closest(SCROLLERS)) continue;
