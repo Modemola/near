@@ -149,6 +149,7 @@ section { margin-top: 3.5rem; }
 @media (min-width: 920px) {
   .split { grid-template-columns: minmax(0, 1fr) 370px; gap: 2rem; }
   .split > aside { position: sticky; top: calc(var(--hdr-bottom, 80px) + 16px); }
+  .split > aside.tall { position: static; }
 }
 .grid { display: grid; gap: 1.2rem; }
 .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); }

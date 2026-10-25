@@ -57,6 +57,25 @@ export function Layout() {
     ro.observe(bar);
     return () => ro.disconnect();
   }, []);
+  // A sidebar stays pinned only while it fits on screen; a taller one scrolls
+  // with the page so its end can always be reached.
+  useEffect(() => {
+    const main = document.getElementById("main");
+    if (!main) return;
+    const check = () =>
+      main.querySelectorAll<HTMLElement>(".split > aside").forEach((a) => {
+        const room = window.innerHeight - parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hdr-bottom") || "80") - 32;
+        a.classList.toggle("tall", a.offsetHeight > room);
+      });
+    const ro = new ResizeObserver(check);
+    const watch = () => main.querySelectorAll(".split > aside").forEach((a) => ro.observe(a));
+    const mo = new MutationObserver(() => { watch(); check(); });
+    mo.observe(main, { childList: true, subtree: true });
+    watch();
+    check();
+    window.addEventListener("resize", check);
+    return () => { ro.disconnect(); mo.disconnect(); window.removeEventListener("resize", check); };
+  }, []);
   const [announce, setAnnounce] = useState("");
   const firstLoad = useRef(true);
   useEffect(() => {

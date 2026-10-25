@@ -33,6 +33,12 @@ const browser = await chromium.launch({
 
 /** Runs in the page: component overlaps, escapes, edge cuts and spilled text. */
 function inspect() {
+  // The hero card is tilted in 3D; its children's bounding boxes become sloped
+  // shapes. Measure the layout flat, then put the tilt back.
+  const tilted = [...document.querySelectorAll(".deck, .deck-float")];
+  for (const el of tilted) { el.style.setProperty("transform", "none", "important"); el.style.setProperty("animation", "none", "important"); el.style.setProperty("transition", "none", "important"); }
+  try { return measure(); } finally { for (const el of tilted) { el.style.removeProperty("transform"); el.style.removeProperty("animation"); el.style.removeProperty("transition"); } }
+  function measure() {
   const vw = document.documentElement.clientWidth;
   const out = { overlaps: [], escapes: [], edges: [], spills: [] };
   const visible = (el) => {
@@ -110,6 +116,7 @@ function inspect() {
   }
   out.overflowX = document.documentElement.scrollWidth > vw + 1;
   return out;
+  }
 }
 
 /** The pinned story at a scroll fraction: text, stage and header must not collide, and both fit on screen. */
