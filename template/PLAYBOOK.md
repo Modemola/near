@@ -85,6 +85,12 @@ moment or the honest table.
   screen edge.
 - **Fast first paint:** pages pre-rendered at build time, each page's code
   loaded on first visit, fonts self-hosted and preloaded.
+- **Smooth once loaded:** nothing animates forever behind a live blur
+  (`backdrop-filter`, `filter: blur`); background glows are gradients, not
+  blurs; loops that repaint pixels (text shimmer, shadows) play once; code
+  loops stop when there's nothing to do; scroll handlers never set style
+  values on `<html>`. Proctor shipped without this check and ran at 5 frames
+  a second on a real laptop; the audit's smoothness step exists because of it.
 
 ## Copy rules
 
@@ -108,6 +114,7 @@ moment or the honest table.
 | Layout shift | under 0.05 on every page | `audit/run.sh` |
 | Backend down | every page says so in plain words; nothing blank or stuck | `audit/run.sh` |
 | Speed | Lighthouse 90+ on a phone where possible | `audit/run.sh` |
+| Smoothness | 50+ fps idle and 40+ scrolling on every page (load scores don't measure this) | `audit/run.sh` |
 | Real devices | opened on a real phone (Safari if you can) | by hand |
 | The core flow | done by someone who hasn't seen it | by hand |
 | Honesty | README table matches what the site does | by hand |

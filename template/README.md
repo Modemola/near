@@ -8,7 +8,7 @@ taken out, ready to be filled with a different product in two days.
 | `PLAYBOOK.md` | The method: five decisions, an hour-by-hour plan for two days, scope rules, copy rules, the quality bar, the submission checklist |
 | `BRIEF.md` | The design brief to fill in during the first hour (with Proctor's answers as an example) |
 | `web/` | A working site: design system, motion, responsive layout, accessibility, every loading/empty/error state, the "check it yourself" moment, a form with live validation, pre-rendered pages |
-| `audit/` | One command that holds any site to the same standard: accessibility, keyboard, 16 screen sizes, overlaps, outages, copy rules, pre-rendering, Lighthouse |
+| `audit/` | One command that holds any site to the same standard: accessibility, keyboard, 16 screen sizes, overlaps, smoothness (frames per second), outages, copy rules, pre-rendering, Lighthouse |
 | `docs/` | Templates for the judges' README, the 90-second demo script and the audit record |
 
 The starter itself passes its own audit; see the bottom of this file.
@@ -102,5 +102,6 @@ screen sizes, 96/96 clean; axe 0 in light and dark; every control reachable
 by keyboard; every page says plainly when the backend is down; all four
 pre-rendered pages attach with no hydration errors; layout shift 0 to 0.003;
 Lighthouse 95 to 97 on a phone and 100 on desktop, with accessibility, best
-practices and SEO at 100. Keep it there as you build: run the audit after
+practices and SEO at 100; 56 to 60 frames a second idle on every page (in
+software rendering, so faster on real machines). Keep it there as you build: run the audit after
 every big change.

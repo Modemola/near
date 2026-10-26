@@ -37,7 +37,7 @@ export function Story({ eyebrow, title, steps, label }: { eyebrow: string; title
   const last = steps.length - 1;
   useEffect(() => {
     if (still) {
-      ref.current?.style.removeProperty("--p");
+      ref.current?.querySelector<HTMLElement>(".story-rail > div")?.style.removeProperty("transform");
       return setStep(last);
     }
     let raf = 0;
@@ -46,7 +46,10 @@ export function Story({ eyebrow, title, steps, label }: { eyebrow: string; title
       if (!el) return;
       const r = el.getBoundingClientRect();
       const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)));
-      el.style.setProperty("--p", p.toFixed(4));
+      // Only the rail moves; setting a style value on the whole section would
+      // recheck every element in it on every scroll frame.
+      const rail = el.querySelector<HTMLElement>(".story-rail > div");
+      if (rail) rail.style.transform = `scaleX(${p.toFixed(4)})`;
       setStep(Math.min(last, Math.floor(p * (steps.length + 0.2))));
     };
     const onScroll = () => {

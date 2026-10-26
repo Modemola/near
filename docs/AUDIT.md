@@ -196,3 +196,33 @@ Hosting: serve each page's `<page>.html` or `<page>/index.html` (both are
 written), and fall back to `app.html` for every other address. A host that
 falls back to `index.html` instead still works: a small script clears the home
 page's HTML before it is drawn on any other address.
+
+## Smoothness (2026-10-26)
+
+On a real laptop the deployed site lagged heavily. None of the earlier checks
+measured it: Lighthouse and the load metrics score loading, not how smoothly
+the page moves once loaded. A profile of the production build showed the home
+page at about 5 frames a second, idle or scrolling, with almost all the time
+spent drawing frames: three 70px-blurred background glows and a live blur
+behind every glass panel were recomputed on every frame, and something always
+moved (a forever-floating hero card, the cursor's endless loop, a headline
+shimmer), so frames never stopped. Scroll handlers also set a style value on
+`<html>`, which made the browser recheck every element's style on every
+scroll frame.
+
+| Fix | Effect |
+|---|---|
+| Background glows drawn as gradients, not moving and not blurred | the biggest single cost gone |
+| Live glass blur only on the header, popups and notifications | no blur recomputed behind content |
+| Cursor loop sleeps once settled; hero card tilts but doesn't float; repainting loops play once | the page stops drawing when nothing changes |
+| Scroll progress set on the bar and the story rail, not on `<html>` | no whole-page style checks while scrolling |
+
+| Page (software rendering) | Before | After |
+|---|---|---|
+| Home, idle / scrolling | 5 / 5 fps | 60 / 40 fps |
+| How it works | | 55 / 55 fps |
+| Certificate | | 60 / 50 fps |
+| Tests | | 56 / 52 fps |
+
+End-to-end 17/17 after the change. The starter in `template/` now has a
+permanent smoothness check (`template/audit/smoothness.mjs`).

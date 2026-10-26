@@ -156,7 +156,10 @@ export function useAmbientMotion() {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const max = document.documentElement.scrollHeight - window.innerHeight;
-        document.documentElement.style.setProperty("--p", String(max > 0 ? window.scrollY / max : 0));
+        // Set on the bar itself: a value on the root element would make the
+        // browser recheck every element's style on every scroll frame.
+        const bar = document.querySelector<HTMLElement>(".scroll-progress");
+        if (bar) bar.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
       });
     };
     document.addEventListener("pointermove", onMove, { passive: true });

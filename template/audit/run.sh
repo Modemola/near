@@ -19,7 +19,8 @@ if [ -n "$QUICK" ]; then
 else
   node responsive.mjs "$BASE" "$OUT/responsive"
 fi
+node smoothness.mjs "$BASE" "$OUT"
 node ui-audit.mjs "$BASE" "$OUT"
 [ -n "$QUICK" ] || node lighthouse.mjs "$BASE" "$OUT"
 echo
-echo "Reports in $OUT: responsive/responsive.txt, ui-audit.txt, lighthouse.txt"
+echo "Reports in $OUT: responsive/responsive.txt, smoothness.txt, ui-audit.txt, lighthouse.txt"
