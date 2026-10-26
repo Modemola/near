@@ -386,8 +386,8 @@ dl.facts dd .small { margin-top: 0.3rem; }
 .deck .ghost { position: absolute; inset: 0; border-radius: var(--r-lg); background: var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .deck .ghost.g1 { transform: translate3d(22px, -22px, -60px) rotate(3deg); opacity: 0.75; animation: fan1 1.4s var(--ease) both; }
 .deck .ghost.g2 { transform: translate3d(42px, -42px, -120px) rotate(6deg); opacity: 0.5; animation: fan2 1.6s var(--ease) both; }
-/* Phones: fan the cards upward with less tilt, so they stay inside the screen's gutter. */
-@media (max-width: 600px) {
+/* Wherever the card reaches the screen's gutter: fan the cards upward with less tilt, so they stay on screen. */
+@media (max-width: 1180px) {
   .deck .ghost.g1 { transform: translate3d(6px, -16px, -60px) rotate(1deg); }
   .deck .ghost.g2 { transform: translate3d(12px, -30px, -120px) rotate(2deg); }
 }
@@ -811,3 +811,8 @@ section[id] { scroll-margin-top: calc(var(--hdr-bottom, 80px) + 16px); }
   body { background: #fff; }
   .route, .reveal { animation: none; opacity: 1; transform: none; }
 }
+/* Detail page placeholder: the same shapes as the loaded page. */
+.item-skel-title { height: clamp(2.1rem, 5.2vw, 3.5rem); width: min(18rem, 80%); }
+.item-skel-stats { height: 126px; }
+@media (max-width: 639px) { .item-skel-stats { height: 240px; } }
+@media (max-width: 431px) { .item-skel-stats { height: 355px; } }

@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { Ceremony } from "../components/Ceremony";
-import { ErrorNote, Hash, Loading, PageHead, Panel, Stat, StatusBadge, useAsync, useTitle } from "../components/ui";
+import { ErrorNote, Hash, PageHead, Panel, Stat, StatusBadge, useAsync, useTitle } from "../components/ui";
 import { checkItem, data } from "../lib/data";
 
 /** A detail page: the content, and a sidebar for the action (pinned while it fits). */
@@ -8,7 +8,28 @@ export function ItemPage() {
   const { id = "" } = useParams();
   const { data: item, error, loading } = useAsync(() => data.item(id), [id]);
   useTitle(item ? item.name : "Details");
-  if (loading) return <Loading what="Loading" height={600} />;
+  // The placeholder has the page's real shape, so nothing moves when it arrives.
+  if (loading)
+    return (
+      <div role="status" aria-label="Loading…">
+        <div className="page-head">
+          <div>
+            <div className="skeleton" style={{ width: 90, height: 14, marginBottom: 14 }} />
+            <div className="skeleton item-skel-title" />
+            <div className="skeleton" style={{ width: "min(32rem, 100%)", height: 22, marginTop: 18 }} />
+          </div>
+        </div>
+        <div className="split">
+          <div className="stack">
+            <div className="skeleton item-skel-stats" />
+            <div className="skeleton" style={{ height: 412 }} />
+          </div>
+          <div className="stack">
+            <div className="skeleton" style={{ height: 425 }} />
+          </div>
+        </div>
+      </div>
+    );
   if (error) return <ErrorNote error={error} />;
   if (!item)
     return (
