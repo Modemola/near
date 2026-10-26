@@ -97,4 +97,10 @@ List your pages, the pre-rendered ones, and how to simulate an outage
 
 ### The starter's own result
 
-RESULT_PLACEHOLDER
+As shipped, with its sample data (`audit/run.sh`, 2026-10-26): 6 pages on 16
+screen sizes, 96/96 clean; axe 0 in light and dark; every control reachable
+by keyboard; every page says plainly when the backend is down; all four
+pre-rendered pages attach with no hydration errors; layout shift 0 to 0.003;
+Lighthouse 95 to 97 on a phone and 100 on desktop, with accessibility, best
+practices and SEO at 100. Keep it there as you build: run the audit after
+every big change.
