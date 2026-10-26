@@ -1,0 +1,11 @@
+{
+  "pages": ["/", "/items", "/items/aurora-7", "/how", "/new", "/nowhere"],
+  "prerendered": ["/", "/items", "/how", "/new"],
+  "lighthouse": ["/", "/items/aurora-7", "/new"],
+  "outage": {
+    "how": "query",
+    "query": "?fail",
+    "apiPattern": "api\\.example\\.com"
+  },
+  "jargon": ["endpoint", "payload", "schema", "hydration", "mutation"]
+}

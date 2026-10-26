@@ -1,0 +1,12 @@
+{
+  "name": "site-audit",
+  "private": true,
+  "type": "module",
+  "description": "Accessibility, keyboard, layout on 16 screen sizes, overlaps, reduced motion, outages, copy rules, pre-rendering and Lighthouse, for any built site.",
+  "dependencies": {
+    "axe-core": "4.13.0",
+    "chrome-launcher": "1.2.1",
+    "lighthouse": "13.4.1",
+    "playwright": "1.56.1"
+  }
+}
