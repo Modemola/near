@@ -113,6 +113,17 @@ outside this test. See [Limits](#limits).
 | Sealing a test to the grader on OutLayer testnet | _Pending OutLayer testnet access_ |
 | Certificates for real TEE models on the private scam set | _Pending NEAR AI credits_ |
 
+## Prior work
+
+Proctor was started before the hackathon, which the rules allow. Every commit
+is dated in the git history; in short:
+
+| Dates | Work |
+|---|---|
+| 2026-10-22 to 10-23 | Research on testnet: NEAR AI attestation and answer signatures, on-chain signature checks, an OutLayer job calling our contract back (`spikes/`); architecture and build plan (`docs/`) |
+| 2026-10-24 to 10-26 | The contract, grader and web app; the end-to-end test; functional, interface and responsive audits (`docs/AUDIT.md`); this README |
+| 2026-11-01 to 11-14 (the hackathon) | Planned: sealing tests on OutLayer testnet, certifying real TEE models on the private scam set, deploying the site, the demo video. This table will say what was actually done |
+
 ## Limits
 
 - Only models served in a TEE can be tested privately. Models marked

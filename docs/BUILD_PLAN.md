@@ -3,9 +3,9 @@
 Hackathon: 2026-11-01 00:00 UTC to 2026-11-14 23:59 UTC. Target: submit on
 **2026-11-13**, keeping the last day as a buffer.
 
-Product code is written from Nov 1 onwards. Before that, only research,
-design and spikes (`spikes/`), so the git history clearly shows what was
-built during the hackathon.
+The hackathon allows prior work. Most of the product was built before Nov 1
+(Oct 22 to 26); the README's "Prior work" section says what was done when,
+and the git history has the dates.
 
 Flagship demo: certifying AI scam filters on a private scam test set
 (`SCAM_TESTSET_DESIGN.md`). The maths contamination check is a secondary
