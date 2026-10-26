@@ -26,14 +26,23 @@ export function Cursor() {
     let y = innerHeight / 2;
     let rx = x;
     let ry = y;
+    // The ring eases towards the pointer, and the loop sleeps once it has
+    // caught up: a loop that never stops makes the browser redraw every frame.
     let raf = 0;
     const frame = () => {
       rx += (x - rx) * 0.18;
       ry += (y - ry) * 0.18;
+      const settled = Math.abs(x - rx) < 0.2 && Math.abs(y - ry) < 0.2;
+      if (settled) {
+        rx = x;
+        ry = y;
+      }
       ring.current!.style.transform = `translate3d(${rx}px, ${ry}px, 0)`;
-      raf = requestAnimationFrame(frame);
+      raf = settled ? 0 : requestAnimationFrame(frame);
     };
-    raf = requestAnimationFrame(frame);
+    const wake = () => {
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
     const move = (e: PointerEvent) => {
       x = e.clientX;
       y = e.clientY;
@@ -43,6 +52,7 @@ export function Cursor() {
         ry = y;
       }
       dot.current!.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      wake();
       root.classList.remove("cursor-out");
       const t = e.target as Element;
       const text = !!t.closest?.(TEXT);

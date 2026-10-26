@@ -32,7 +32,7 @@ export function ExamStory() {
 
   useEffect(() => {
     if (still) {
-      ref.current?.style.removeProperty("--p");
+      ref.current?.querySelector<HTMLElement>(".story-rail > div")?.style.removeProperty("transform");
       return setStep(3);
     }
     let raf = 0;
@@ -41,7 +41,10 @@ export function ExamStory() {
       if (!el) return;
       const r = el.getBoundingClientRect();
       const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - window.innerHeight)));
-      el.style.setProperty("--p", p.toFixed(4));
+      // Only the rail moves; setting a style value on the whole section would
+      // recheck every element in it on every scroll frame.
+      const rail = el.querySelector<HTMLElement>(".story-rail > div");
+      if (rail) rail.style.transform = `scaleX(${p.toFixed(4)})`;
       setStep(Math.min(3, Math.floor(p * 4.2)));
     };
     const onScroll = () => {

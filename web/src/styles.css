@@ -997,3 +997,24 @@ section[id] { scroll-margin-top: calc(var(--hdr-bottom, 80px) + 16px); }
 .verify-explain .eyebrow { margin: 0 0 0.6rem; }
 .explain-steps { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.6rem; color: var(--ink-secondary); font-size: 0.92rem; }
 .explain-steps strong { color: var(--ink); font-weight: 500; }
+
+/* ---------- Performance: smooth on an ordinary laptop ----------
+   Measured in a profile: whenever anything moved, the browser redrew the
+   whole screen, and each redraw recomputed three 70px-blurred background
+   glows plus a live blur behind every glass panel. That ran at about 5 frames
+   a second. So: the glows are soft gradients that don't move (no live blur),
+   live glass blur is kept only where it matters (header, popups, toasts), and
+   loops that repaint pixels play a couple of times and stop. */
+.aurora span { filter: none; will-change: auto; animation: none !important; opacity: calc(var(--aurora-o) * 1.25); }
+.aurora span:nth-child(1) { background: radial-gradient(closest-side, var(--aurora-a), transparent); }
+.aurora span:nth-child(2) { background: radial-gradient(closest-side, var(--aurora-b), transparent); }
+.aurora span:nth-child(3) { background: radial-gradient(closest-side, var(--aurora-c), transparent); opacity: calc(var(--aurora-o) * 0.9); }
+:root { --glass: rgba(250, 248, 242, 0.8); }
+@media (prefers-color-scheme: dark) { :root { --glass: rgba(28, 35, 46, 0.84); } }
+.panel.glass, .note, .stamp, .tile.glass, .scan-card, .deck .ghost, .celebrate .big-stamp, .foil-label { backdrop-filter: none; -webkit-backdrop-filter: none; }
+header.site .bar-glass { backdrop-filter: blur(12px) saturate(1.4); -webkit-backdrop-filter: blur(12px) saturate(1.4); }
+h1 em, h2 em, h3 em, .say em, .board-row.first .rank, .tile .mini-beads i { animation-iteration-count: 2; }
+.stamp::before, .fseal.spin .fseal-ticks, .fseal.spin .fseal-text, .foil-sheen { animation: none; }
+/* The hero card tilts towards the pointer but no longer floats forever: a 3D
+   stack moving every frame kept the whole screen redrawing while idle. */
+.deck-float { animation: none; }
