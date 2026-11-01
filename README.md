@@ -113,16 +113,33 @@ outside this test. See [Limits](#limits).
 | Sealing a test to the grader on OutLayer testnet | _Pending OutLayer testnet access_ |
 | Certificates for real TEE models on the private scam set | _Pending NEAR AI credits_ |
 
-## Prior work
+## Timeline
 
-Proctor was started before the hackathon, which the rules allow. Every commit
-is dated in the git history; in short:
+Everything here was built during the hackathon window, which runs from the
+announcement on 2026-10-19 to 2026-11-14 (HACKATHON.md, Q-001). The first
+commit is from 2026-10-22; every commit is dated in the git history.
 
 | Dates | Work |
 |---|---|
 | 2026-10-22 to 10-23 | Research on testnet: NEAR AI attestation and answer signatures, on-chain signature checks, an OutLayer job calling our contract back (`spikes/`); architecture and build plan (`docs/`) |
-| 2026-10-24 to 10-26 | The contract, grader and web app; the end-to-end test; functional, interface and responsive audits (`docs/AUDIT.md`); this README |
-| 2026-11-01 to 11-14 (the hackathon) | Planned: sealing tests on OutLayer testnet, certifying real TEE models on the private scam set, deploying the site, the demo video. This table will say what was actually done |
+| 2026-10-24 to 10-27 | The contract, grader and web app; the end-to-end test; functional, interface, responsive and smoothness audits (`docs/AUDIT.md`); the deployed demo; this README |
+| 2026-11-01 to 11-14 | Planned: sealing tests on OutLayer testnet, certifying real TEE models on the private scam set, the demo video. This table will say what was actually done |
+
+## Built with
+
+As HACKATHON.md asks (Q-005), the libraries, tools and help used:
+
+| Part | Libraries and tools |
+|---|---|
+| Contract | near-sdk 5.29, serde, sha2, ed25519-dalek; tests with near-workspaces 0.23 and near-sandbox |
+| Grader | Rust compiled to WASI for OutLayer; serde, sha2, ed25519-dalek |
+| Web | React 18, React Router 6, Vite 5, TypeScript; NEAR Wallet Selector 10 and near-js 2.5; @noble/ed25519 for in-browser signature checks; three.js (the 3D vault), Lenis (smooth scrolling); Fraunces, Geist and Geist Mono fonts (Fontsource) |
+| Tests and audits | Playwright with Chromium, axe-core, Lighthouse |
+| Services | NEAR testnet RPC (and FastNEAR as a fallback), NEAR AI Cloud, OutLayer, Vercel for hosting |
+| AI assistance | Code, tests, audits and documentation were written with Claude Code (Anthropic), directed and reviewed by the team |
+
+No pre-existing project or template was used as a base. The `template/`
+folder is a starter extracted from this project afterwards, for reuse.
 
 ## Limits
 

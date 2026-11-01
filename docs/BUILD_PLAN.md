@@ -3,9 +3,9 @@
 Hackathon: 2026-11-01 00:00 UTC to 2026-11-14 23:59 UTC. Target: submit on
 **2026-11-13**, keeping the last day as a buffer.
 
-The hackathon allows prior work. Most of the product was built before Nov 1
-(Oct 22 to 26); the README's "Prior work" section says what was done when,
-and the git history has the dates.
+The hackathon window starts at the announcement on 2026-10-19 (HACKATHON.md,
+Q-001), so all of this work, from the first commit on 2026-10-22, counts. The
+README's "Timeline" section says what was done when.
 
 Flagship demo: certifying AI scam filters on a private scam test set
 (`SCAM_TESTSET_DESIGN.md`). The maths contamination check is a secondary

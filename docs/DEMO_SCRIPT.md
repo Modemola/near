@@ -43,3 +43,39 @@ off the screen at recording time, never from this script.
   about a quarter of the way through.
 - Export at 1080p, 30 fps; captions burned in (many judges watch muted).
 - Keep it under 90 seconds; cut the 1:12–1:21 shot first if it runs long.
+
+## The X post (you publish it; this is a draft)
+
+HACKATHON.md requires the post to say it was built at NEAR HACKATHON, tag
+@NEARProtocol and #NEARHackathon (optionally @NearLegion and @NearBuilders),
+and attach the demo video. Their advice: lead with the user's problem, show
+one complete moment, say concretely what NEAR does, give a next step.
+
+Draft (adjust the bracketed parts; keep "testnet demo" until real models are
+certified):
+
+> AI is becoming your scam filter, but the only scores come from the vendors
+> themselves, on tests scammers can read too.
+>
+> Proctor tests AI models on a sealed set of scam and real messages nobody
+> can see. Every answer is signed inside secure hardware, and a NEAR contract
+> checks every signature before it issues a certificate.
+>
+> In the video: one click re-checks all [40] signed answers in your own
+> browser, straight from NEAR. No wallet needed.
+>
+> Built at NEAR HACKATHON on @NEARProtocol, with NEAR AI Cloud and OutLayer.
+> [testnet demo link] · [repo link]
+> Which AI filter would you want tested first?
+>
+> #NEARHackathon @NearBuilders @NearLegion
+
+About 650 characters, which needs X Premium. Short version for the
+280-character limit:
+
+> AI scam filters are only graded by their vendors. Proctor tests them on a
+> sealed test nobody can see; NEAR checks every signed answer, and one click
+> re-checks it in your browser.
+>
+> Built at NEAR HACKATHON @NEARProtocol #NEARHackathon
+> [testnet demo link]
