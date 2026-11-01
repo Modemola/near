@@ -188,3 +188,7 @@ scripts/e2e/run.sh
 | `data/` | The public 20-message sample and calibration items (the private set is never in the repo) |
 | `docs/` | Architecture, test-set design, design notes, and the audit record (`AUDIT.md`) |
 | `spikes/` | The research that proved each NEAR and OutLayer step on testnet |
+
+## License
+
+MIT; see `LICENSE`.
