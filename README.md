@@ -5,14 +5,17 @@
 AI models are becoming the scam filter for inboxes, banks and family phones.
 Today the only evidence of how well one catches scams is its vendor's own
 number on a benchmark the vendor picked. Public benchmarks leak into training
-data, and scammers can read them too.
+data, and scammers can read them too. The same gap is opening for every AI
+guardrail, such as an AI that approves or blocks an agent's payments: who
+checks that the checker is any good? Every AI guardrail needs an exam it
+can't study for.
 
 Proctor tests models on a **sealed** test set that nobody can read (not the
 model owner, not the test runner, not us), grades them inside secure
 hardware, and publishes a certificate on NEAR that **anyone can re-check in
 their browser**, answer by answer.
 
-> Live site: _to be added at deployment_ · Demo video: _to be added_ ·
+> Live site (testnet demo): https://proctor-gold.vercel.app · Demo video: _to be added_ ·
 > Tracks: privacy (main), security, open
 
 ---

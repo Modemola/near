@@ -61,6 +61,8 @@ certified):
 > can see. Every answer is signed inside secure hardware, and a NEAR contract
 > checks every signature before it issues a certificate.
 >
+> Every AI guardrail needs an exam it can't study for.
+>
 > In the video: one click re-checks all [40] signed answers in your own
 > browser, straight from NEAR. No wallet needed.
 >
@@ -70,12 +72,12 @@ certified):
 >
 > #NEARHackathon @NearBuilders @NearLegion
 
-About 650 characters, which needs X Premium. Short version for the
+About 700 characters, which needs X Premium. Short version for the
 280-character limit:
 
-> AI scam filters are only graded by their vendors. Proctor tests them on a
-> sealed test nobody can see; NEAR checks every signed answer, and one click
-> re-checks it in your browser.
+> AI scam filters are only graded by their vendors. Every AI guardrail needs
+> an exam it can't study for: Proctor tests them on a sealed test nobody can
+> see, and NEAR checks every signed answer.
 >
 > Built at NEAR HACKATHON @NEARProtocol #NEARHackathon
 > [testnet demo link]
