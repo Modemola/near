@@ -19,15 +19,16 @@ off the screen at recording time, never from this script.
 
 ## Honesty rules for the recording
 
-- **Record on real models if at all possible.** If the recording uses the
-  testnet demo (mock OutLayer, simulated models), it must say so on screen
-  during 0:40–1:12, for example "Testnet demo: simulated model and grader".
-  The site's own "Demo" chip should stay visible in the header.
+- **Record on the sealed test's real results** (the home page features them):
+  real NEAR AI models, every answer signed in secure hardware and checked on
+  NEAR. One thing is still simulated: on testnet the grader runs outside
+  OutLayer's enclave. Keep the header's "Testnet" notice visible, and add one
+  caption during 0:18–0:40, for example "On testnet, the grader runs outside
+  the enclave for now".
 - **If the check is sped up, say so** in the caption ("sped up 4×"). It
   takes about a minute in real time.
-- **Don't claim what isn't done.** Until real certificates exist, swap the
-  line at 0:40 for: "Here's a result from our testnet demo." The README's
-  "What's real today" table is the source of truth.
+- **Don't claim what isn't done.** The README's "What's real today" table is
+  the source of truth.
 
 ## Recording checklist
 
@@ -51,8 +52,10 @@ HACKATHON.md requires the post to say it was built at NEAR HACKATHON, tag
 and attach the demo video. Their advice: lead with the user's problem, show
 one complete moment, say concretely what NEAR does, give a next step.
 
-Draft (adjust the bracketed parts; keep "testnet demo" until real models are
-certified):
+Draft (adjust the bracketed parts). The certificates on the sealed test are
+real models with real signed answers; the grader itself still runs outside
+OutLayer's enclave on testnet, so say "on NEAR testnet" rather than claiming
+the whole pipeline runs in secure hardware:
 
 > AI is becoming your scam filter, but the only scores come from the vendors
 > themselves, on tests scammers can read too.
@@ -67,7 +70,7 @@ certified):
 > browser, straight from NEAR. No wallet needed.
 >
 > Built at NEAR HACKATHON on @NEARProtocol, with NEAR AI Cloud and OutLayer.
-> [testnet demo link] · [repo link]
+> https://proctor-gold.vercel.app · [repo link]
 > Which AI filter would you want tested first?
 >
 > #NEARHackathon @NearBuilders @NearLegion
@@ -80,4 +83,4 @@ About 700 characters, which needs X Premium. Short version for the
 > see, and NEAR checks every signed answer.
 >
 > Built at NEAR HACKATHON @NEARProtocol #NEARHackathon
-> [testnet demo link]
+> https://proctor-gold.vercel.app
