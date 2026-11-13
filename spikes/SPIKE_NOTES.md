@@ -126,3 +126,33 @@ model, false alarms 3-15%; coverage uneven across models.
   fraud alert (pub-03) and returned no answer; counted as wrong by design.
 - **Cost:** about $0.0014 per answer, so a full audit of 7 models x 3 runs is
   about $5-6.
+
+## Private set audit, second pass (2026-11-13)
+
+Set v2 (179 items: 95 scam, 84 legitimate) with the placeholder-aware prompt
+(`grader/prompt.txt`), 5 TEE models x 3 runs, 2,685 answers, about $5 of
+NEAR AI credit:
+
+| Model | Correct | No answer |
+|---|---|---|
+| z-ai/glm-5.3 | 99.8% | 0 |
+| Qwen/Qwen3.6-35B-A3B-FP8 | 98.9% | 0 |
+| moonshotai/kimi-k3 | 98.7% | 6 |
+| Qwen/Qwen3.8-27B | 98.1% | 3 |
+| deepseek/deepseek-v3.2 | 94.0% | 0 |
+
+No item had half or more of its answers disagree with its label. Three had
+30-50%: p-043 (reviewed 2026-10-24, kept legitimate), p-045 and p-168; to
+review before a v3 of the set (relabelling now would change the fingerprint
+of the set that is already certified).
+
+## Which models can be certified on-chain (2026-11-13)
+
+Only NEAR-hosted TEE models return an Ed25519 signing key in
+`/v1/attestation/report?...&provider=near` bound to our nonce, and sign
+answers as `<model>:<sha256(req)>:<sha256(resp)>`: Qwen3.8-27B,
+Qwen3.6-35B-A3B, Qwen3-VL-30B-A3B, GLM-5.3-flash and DeepSeek-V4.1-Flash
+(the last two answered "upstream request failed" all day). Models served by
+third-party TEE providers (`tinfoil`: GLM-5.3; `chutes`: DeepSeek-V3.2, Kimi
+K2.6/K3) answer privately but carry no such signature, so the contract can't
+check their answers yet. Signing keys were stable across repeated reports.
