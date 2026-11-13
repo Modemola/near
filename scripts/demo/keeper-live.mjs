@@ -61,7 +61,10 @@ for (;;) {
     const out = ev.chunks.filter((c) => c.state === "InFlight").length;
     const waiting = ev.chunks.filter((c) => c.state === "Pending" || (c.state === "Failed" && c.attempts < 3)).length;
     if (out === 0 && waiting > 0 && working.size < MAX) {
-      await call(keeper, PROCTOR, "dispatch", { eval_id: String(id) }).catch((e) => console.log("dispatch failed", id, String(e).slice(0, 160)));
+      // Each dispatch starts about 2 batches (its gas allows no more), so
+      // start a few rounds at once; all of them are graded in parallel.
+      for (let k = 0; k < Math.min(3, Math.ceil(waiting / 2)); k++)
+        await call(keeper, PROCTOR, "dispatch", { eval_id: String(id) }).catch((e) => console.log("dispatch failed", id, String(e).slice(0, 160)));
       console.log(`eval ${id} ${ev.model_id}: ${done}/${ev.chunks.length} batches done, started more`);
     }
   }
