@@ -11,7 +11,7 @@
 // Usage: NEARAI_API_KEY=... [PAUSED_MODELS=a,b] node keeper-live.mjs <root-account.testnet> <set.json> [parallel]
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { call, loadAccount, sleep, view } from "./lib.mjs";
+import { call, loadAccount, provider, sleep, view } from "./lib.mjs";
 
 const [root, setPath, parallel = "16"] = process.argv.slice(2);
 const PROCTOR = `proctor-demo.${root}`;
@@ -25,6 +25,11 @@ const working = new Map(); // request id -> eval id
 // their retries aren't spent, and resume them later.
 const PAUSED = new Set((process.env.PAUSED_MODELS ?? "").split(",").filter(Boolean));
 const MAX = Number(parallel);
+// Transactions go out one at a time: NEAR checks each one's gas against a
+// pessimistic price (up to 10x), so many in flight at once can tie up the
+// whole balance even though nearly all of it is refunded.
+let txQueue = Promise.resolve();
+const tx = (fn) => (txQueue = txQueue.then(fn, fn));
 
 function grade(input) {
   return new Promise((resolve) => {
@@ -41,29 +46,41 @@ async function work(r) {
   const t0 = Date.now();
   const output = await grade(r.input_data);
   const ok = JSON.parse(output).success;
-  await call(keeper, OUTLAYER, "resolve", { request_id: r.id, output }, { tgas: 100 }).catch((e) => console.log("resolve failed", r.id, String(e).slice(0, 160)));
+  // Resolving only resumes a yield whose gas was reserved when it was created.
+  await tx(() => call(keeper, OUTLAYER, "resolve", { request_id: r.id, output }, { tgas: 30 })).catch((e) => console.log("resolve failed", r.id, String(e).slice(0, 160)));
   console.log(`request ${r.id} ${ok ? "graded" : "FAILED: " + JSON.parse(output).error} in ${Math.round((Date.now() - t0) / 1000)}s`);
   working.delete(r.id);
 }
 
-// Requests still open when the keeper starts belong to batches whose wait
-// already ran out (the contract marked them failed and will send them again),
-// so grading them would be wasted.
-const dead = new Set((await view(OUTLAYER, "list_requests")).filter((r) => !r.resolved).map((r) => r.id));
-console.log("ignoring", dead.size, "requests left open by an earlier keeper");
+// A request is worth grading only while the contract still waits for it: its
+// batch is in flight and was sent less than ~180 blocks ago (a yield is
+// abandoned after about 200). Older open requests are dead: the contract has
+// marked those batches failed or will, and sends them again.
+async function live(r, evals, head) {
+  const job = JSON.parse(r.input_data);
+  const ev = evals.find((e) => e.model_id === job.model && e.nonces.includes(job.nonce));
+  if (!ev) return false;
+  const c = ev.chunks[ev.nonces.indexOf(job.nonce) * ev.chunks_per_run + job.chunk];
+  return c?.state === "InFlight" && head - Number(c.since) < 180;
+}
 
 async function round() {
+  const count = Number(await view(PROCTOR, "eval_count"));
+  const evals = [];
+  for (let id = 0; id < count; id++) {
+    const ev = await view(PROCTOR, "get_eval", { eval_id: String(id) });
+    if (ev.set_id === SET) evals.push(ev);
+  }
+  const head = (await provider.viewBlock({ finality: "final" })).header.height;
   const requests = (await view(OUTLAYER, "list_requests")).filter((r) => !r.resolved && JSON.parse(r.input_data).set_id === SET);
   for (const r of requests) {
-    if (dead.has(r.id) || working.has(r.id) || working.size >= MAX) continue;
+    if (working.has(r.id) || working.size >= MAX || !(await live(r, evals, head))) continue;
     working.set(r.id, true);
     work(r);
   }
-  const count = Number(await view(PROCTOR, "eval_count"));
   let running = 0;
-  for (let id = 0; id < count; id++) {
-    const ev = await view(PROCTOR, "get_eval", { eval_id: String(id) });
-    if (ev.set_id !== SET) continue;
+  for (const ev of evals) {
+    const id = ev.id;
     const done = ev.chunks.filter((c) => c.state === "Done").length;
     if (ev.status !== "Running" || PAUSED.has(ev.model_id)) continue;
     running++;
@@ -73,7 +90,7 @@ async function round() {
       // Each dispatch starts about 2 batches (its gas allows no more), so
       // start a few rounds at once; all of them are graded in parallel.
       for (let k = 0; k < Math.min(3, Math.ceil(waiting / 2)); k++)
-        await call(keeper, PROCTOR, "dispatch", { eval_id: String(id) }).catch((e) => console.log("dispatch failed", id, String(e).slice(0, 160)));
+        await tx(() => call(keeper, PROCTOR, "dispatch", { eval_id: String(id) })).catch((e) => console.log("dispatch failed", id, String(e).slice(0, 160)));
       console.log(`eval ${id} ${ev.model_id}: ${done}/${ev.chunks.length} batches done, started more`);
     }
   }
