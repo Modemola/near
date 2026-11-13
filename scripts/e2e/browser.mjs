@@ -47,7 +47,8 @@ async function step(name, fn) {
     await page.screenshot({ path: `fail-${results.length}.png`, fullPage: true }).catch(() => {});
   }
 }
-const expectText = async (text, timeout = 20000) => page.getByText(text, { exact: false }).first().waitFor({ timeout });
+// Visible text only: a closed popup or notice can contain the same words.
+const expectText = async (text, timeout = 20000) => page.getByText(text, { exact: false }).filter({ visible: true }).first().waitFor({ timeout });
 const go = async (path) => {
   await page.goto(BASE + path, { waitUntil: "networkidle" });
 };
