@@ -8,7 +8,7 @@
 // batches start for a run only when none of its batches are still out, and
 // batches are small (10 messages).
 //
-// Usage: NEARAI_API_KEY=... node keeper-live.mjs <root-account.testnet> <set.json> [parallel]
+// Usage: NEARAI_API_KEY=... [PAUSED_MODELS=a,b] node keeper-live.mjs <root-account.testnet> <set.json> [parallel]
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { call, loadAccount, sleep, view } from "./lib.mjs";
@@ -21,6 +21,9 @@ const GRADER = new URL("../../grader/target/release/examples/live", import.meta.
 const TEST_SET = JSON.stringify(JSON.parse(readFileSync(setPath, "utf8")).items);
 const keeper = loadAccount(root);
 const working = new Map(); // request id -> eval id
+// Models whose provider is failing right now: leave their runs untouched, so
+// their retries aren't spent, and resume them later.
+const PAUSED = new Set((process.env.PAUSED_MODELS ?? "").split(",").filter(Boolean));
 const MAX = Number(parallel);
 
 function grade(input) {
@@ -43,7 +46,7 @@ async function work(r) {
   working.delete(r.id);
 }
 
-for (;;) {
+async function round() {
   const requests = (await view(OUTLAYER, "list_requests")).filter((r) => !r.resolved && JSON.parse(r.input_data).set_id === SET);
   for (const r of requests) {
     if (working.has(r.id) || working.size >= MAX) continue;
@@ -56,7 +59,7 @@ for (;;) {
     const ev = await view(PROCTOR, "get_eval", { eval_id: String(id) });
     if (ev.set_id !== SET) continue;
     const done = ev.chunks.filter((c) => c.state === "Done").length;
-    if (ev.status !== "Running") continue;
+    if (ev.status !== "Running" || PAUSED.has(ev.model_id)) continue;
     running++;
     const out = ev.chunks.filter((c) => c.state === "InFlight").length;
     const waiting = ev.chunks.filter((c) => c.state === "Pending" || (c.state === "Failed" && c.attempts < 3)).length;
@@ -68,9 +71,21 @@ for (;;) {
       console.log(`eval ${id} ${ev.model_id}: ${done}/${ev.chunks.length} batches done, started more`);
     }
   }
-  if (running === 0 && working.size === 0) {
-    console.log("all certifications on", SET, "finished");
-    break;
+  return running === 0 && working.size === 0;
+}
+
+// A busy RPC node (HTTP 429) or a dropped connection must not stop grading:
+// wait and try again.
+for (let pause = 5000; ; ) {
+  try {
+    if (await round()) {
+      console.log("all certifications on", SET, "finished", PAUSED.size ? `(paused: ${[...PAUSED].join(", ")})` : "");
+      break;
+    }
+    pause = 5000;
+  } catch (e) {
+    pause = Math.min(60000, pause * 2);
+    console.log("RPC trouble, retrying in", pause / 1000, "s:", String(e).split("\n")[0].slice(0, 120));
   }
-  await sleep(5000);
+  await sleep(pause);
 }

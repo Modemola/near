@@ -8,7 +8,11 @@
 //! on stdin, the set in the TEST_SET variable, one JSON envelope on stdout),
 //! so a keeper can run real grading where OutLayer can't run it yet.
 
-use proctor_grader::{grade_chunk, Envelope, Http, Item, Job, Response};
+use proctor_grader::{
+    grade_chunk, grade_item, model_signer, set_commitment, ChunkResult, Confusion, Envelope, Http,
+    Item, Job, Response,
+};
+use sha2::{Digest, Sha256};
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::time::Duration;
@@ -22,7 +26,8 @@ fn curl(
     body: Option<&[u8]>,
 ) -> Result<Response, String> {
     let mut cmd = Command::new("curl");
-    cmd.args(["-sS", "-X", method, url, "-o", "-", "-w", "\n%{http_code}"]);
+    // A stalled connection fails (and the grader retries it) instead of hanging.
+    cmd.args(["-sS", "--max-time", "150", "-X", method, url, "-o", "-", "-w", "\n%{http_code}"]);
     for (k, v) in headers {
         cmd.args(["-H", &format!("{k}: {v}")]);
     }
@@ -70,6 +75,54 @@ impl Http for Curl {
     }
 }
 
+/// The library's `grade_chunk`, with the chunk's questions asked at the same
+/// time instead of one after another (a WASI component has no threads). Each
+/// item goes through the same `grade_item`, and answers, counts and the
+/// records digest are assembled in item order, so the output is identical.
+fn grade_chunk_parallel(key: &str, job: &Job, items: &[Item]) -> Result<ChunkResult, String> {
+    if job.chunk_size == 0 {
+        return Err("chunk_size must be positive".into());
+    }
+    let start = job.chunk.checked_mul(job.chunk_size).ok_or("chunk out of range")?;
+    if start >= items.len() {
+        return Err("chunk out of range".into());
+    }
+    let chunk = &items[start..items.len().min(start + job.chunk_size)];
+    let (signer, report_hash) = model_signer(&Curl, key, job)?;
+    let graded: Vec<_> = std::thread::scope(|s| {
+        let handles: Vec<_> = chunk
+            .iter()
+            .map(|item| s.spawn(|| grade_item(&Curl, key, job, &signer, item)))
+            .collect();
+        handles.into_iter().map(|h| h.join().expect("grading thread")).collect()
+    });
+    let mut confusion = Confusion::default();
+    let mut answers = Vec::with_capacity(chunk.len());
+    let mut digest = [0u8; 32];
+    for (item, result) in chunk.iter().zip(graded) {
+        let (label, answer, record) = result?;
+        confusion.record(item.label, label);
+        answers.push(answer);
+        let mut h = Sha256::new();
+        h.update(digest);
+        h.update(record);
+        digest = h.finalize().into();
+    }
+    Ok(ChunkResult {
+        set_id: job.set_id.clone(),
+        model: job.model.clone(),
+        chunk: job.chunk,
+        nonce: job.nonce.clone(),
+        set_commitment: set_commitment(items),
+        n: chunk.len() as u32,
+        confusion,
+        signer,
+        attestation_report_sha256: report_hash,
+        answers,
+        records_digest: hex::encode(digest),
+    })
+}
+
 fn job_mode() {
     let run = || -> Result<proctor_grader::ChunkResult, String> {
         let mut raw = String::new();
@@ -78,7 +131,7 @@ fn job_mode() {
         let set = std::env::var("TEST_SET").map_err(|_| "TEST_SET is not set")?;
         let items: Vec<Item> = serde_json::from_str(&set).map_err(|e| format!("bad test set: {e}"))?;
         let key = std::env::var("NEARAI_API_KEY").map_err(|_| "NEARAI_API_KEY is not set")?;
-        grade_chunk(&Curl, &key, &job, &items)
+        grade_chunk_parallel(&key, &job, &items)
     };
     let envelope = match run() {
         Ok(r) => Envelope { success: true, output: Some(r), error: None },
