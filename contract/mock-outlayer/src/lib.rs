@@ -112,10 +112,10 @@ impl MockOutlayer {
             .get(&request_id)
             .cloned()
             .expect("no such request");
-        // Deliver the output once and free its storage, so the mock's state
+        // Deliver the output once and forget the request, so the mock's state
         // doesn't grow with every job.
         let output = r.output.take();
-        self.requests.insert(request_id, r.clone());
+        self.requests.remove(&request_id);
         // Like OutLayer: keep a small fee and refund the rest to the payer.
         let fee = NearToken::from_millinear(1).as_yoctonear().min(r.deposit.0);
         if r.deposit.0 > fee {
@@ -127,6 +127,22 @@ impl MockOutlayer {
             Ok(_) => output,
             Err(_) => env::panic_str("execution timed out"),
         }
+    }
+
+    /// Forget up to `limit` requests that were resolved and delivered (left
+    /// by versions that kept them), freeing their storage. Returns how many.
+    pub fn prune(&mut self, limit: u32) -> u32 {
+        let done: Vec<u64> = self
+            .requests
+            .iter()
+            .filter(|(_, r)| r.resolved && r.output.is_none())
+            .map(|(id, _)| *id)
+            .take(limit as usize)
+            .collect();
+        for id in &done {
+            self.requests.remove(id);
+        }
+        done.len() as u32
     }
 
     pub fn list_requests(&self) -> Vec<Request> {

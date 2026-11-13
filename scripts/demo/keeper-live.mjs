@@ -46,10 +46,16 @@ async function work(r) {
   working.delete(r.id);
 }
 
+// Requests still open when the keeper starts belong to batches whose wait
+// already ran out (the contract marked them failed and will send them again),
+// so grading them would be wasted.
+const dead = new Set((await view(OUTLAYER, "list_requests")).filter((r) => !r.resolved).map((r) => r.id));
+console.log("ignoring", dead.size, "requests left open by an earlier keeper");
+
 async function round() {
   const requests = (await view(OUTLAYER, "list_requests")).filter((r) => !r.resolved && JSON.parse(r.input_data).set_id === SET);
   for (const r of requests) {
-    if (working.has(r.id) || working.size >= MAX) continue;
+    if (dead.has(r.id) || working.has(r.id) || working.size >= MAX) continue;
     working.set(r.id, true);
     work(r);
   }
