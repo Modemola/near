@@ -112,9 +112,11 @@ outside this test. See [Limits](#limits).
 | A NEAR contract verifies that signature itself | **Proven** on testnet (`caller.certspike-1a6b29.testnet`, item 10) |
 | OutLayer runs our job and calls our contract back | **Proven** on testnet (tx `AXnT8TKNzc2eFixq1QmV9qCXgEzaDZc6ZvHWmpiFCCm4`, item 5) |
 | Contract, grader and site, end to end | **Working** on a local NEAR chain with a stand-in for OutLayer: every button, publish to certificate to verify (`scripts/e2e/run.sh`, 17/17 steps) |
-| Testnet deployment (`proctor-demo.certspike-1a6b29.testnet`) | **Demo**: the real contract, wired to a mock OutLayer and simulated models, and labelled as a demo on the site |
-| Sealing a test to the grader on OutLayer testnet | _Pending OutLayer testnet access_ |
-| Certificates for real TEE models on the private scam set | _Pending NEAR AI credits_ |
+| **Certificates for real NEAR AI models on the sealed scam test** | **Live on testnet** (`proctor-demo.certspike-1a6b29.testnet`, test `sealed-scams`, 179 messages, 3 runs each): Qwen3.6-35B 97.8% overall with 2.0% of real messages wrongly flagged; Qwen3-VL-30B 84.2% with 32.5% flagged. Every answer was signed in the model's TEE with a key from its attestation report, checked by the contract, and re-checks in the browser ("All 537 answers check out") |
+| The grader inside OutLayer's TDX enclave | **Not yet**: on testnet the grader (the same code, `grader/examples/live.rs --job`) runs on the operator's machine and its output reaches the contract through a stand-in for OutLayer. The site says so in its header notice. OutLayer testnet couldn't fetch custom WASM in October (`spikes/SPIKE_NOTES.md`, item 11); a downloader worker is online now |
+| Which models can be certified | NEAR-hosted TEE models that sign answers in NEAR's Ed25519 format (the Qwen family, GLM-5.3-flash, DeepSeek-V4.1-Flash). Models run by third-party TEE providers (DeepSeek-V3.2, GLM-5.3, Kimi) answer privately but don't sign in that format, so the contract can't check them yet |
+| The sealed test's labels | **Audited**: 5 TEE models x 3 runs (about 2,700 answers); no message had even half its answers disagree with its label |
+| Simulated demo | The `public-sample-demo` test still holds two simulated models, labelled as a demo |
 
 ## Timeline
 
