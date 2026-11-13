@@ -136,13 +136,14 @@ export function Layout() {
                 {simulated && (
                   <details className="chip-pop demo">
                     <summary>
-                      Demo<span className="short-hide"> · simulated</span>
+                      Testnet<span className="short-hide"> · partly simulated</span>
                     </summary>
                     <div className="pop" role="note">
                       <p>
-                        <strong>You are looking at a demo.</strong> Grading jobs go to{" "}
-                        <code>{cfg.data?.outlayer}</code>, a stand-in for OutLayer, not secure hardware. Its models and
-                        scores only show how Proctor works. They are not real results.
+                        <strong>What's real here.</strong> Grading jobs go to <code>{cfg.data?.outlayer}</code>, a
+                        stand-in for OutLayer, so the grader runs on the operator's machine instead of inside secure
+                        hardware. On the sealed test, the models are real NEAR AI models in secure hardware, and every
+                        answer they signed is checked on NEAR. Tests marked "demo" use simulated models.
                       </p>
                     </div>
                   </details>
