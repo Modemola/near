@@ -128,7 +128,7 @@ commit is from 2026-10-22; every commit is dated in the git history.
 |---|---|
 | 2026-10-22 to 10-23 | Research on testnet: NEAR AI attestation and answer signatures, on-chain signature checks, an OutLayer job calling our contract back (`spikes/`); architecture and build plan (`docs/`) |
 | 2026-10-24 to 10-27 | The contract, grader and web app; the end-to-end test; functional, interface, responsive and smoothness audits (`docs/AUDIT.md`); the deployed demo; this README |
-| 2026-11-01 to 11-14 | Planned: sealing tests on OutLayer testnet, certifying real TEE models on the private scam set, the demo video. This table will say what was actually done |
+| 2026-11-01 to 11-14 | Certified three real NEAR AI TEE models on the sealed 179-message scam test on testnet (3 runs each, every signature checked on-chain and in the browser); the demo video. Running the grader inside OutLayer's enclave is still to do |
 
 ## Built with
 
