@@ -15,7 +15,7 @@ model owner, not the test runner, not us), grades them inside secure
 hardware, and publishes a certificate on NEAR that **anyone can re-check in
 their browser**, answer by answer.
 
-> Live site (testnet demo): https://proctor-gold.vercel.app · Demo video: _to be added_ ·
+> Live site (testnet demo): https://proctor-gold.vercel.app · Demo video: [on X](https://x.com/Modemolaa/status/2121706041226195103) ·
 > Tracks: privacy (main), security, open
 
 ---
